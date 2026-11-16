@@ -68,6 +68,10 @@
 
 ## 版面容錯與分頁行為
 
+- **主分頁**（`#viewTabs` + `[data-panel]`）把長頁面切成六個重點：關鍵指標分析／電價與成本／損益試算／
+  購電與結構／財務與碳費／數據明細。桌機 sticky、手機不 sticky（避免吃掉 89px 視窗）。
+  隱藏中的分頁**不預先建立圖表**（canvas 尺寸為 0 會畫成空白），切過去時才依 `PANELS` 清單補畫；
+  列印時所有分頁自動展開。
 - 三組分頁（走勢圖範圍／燃料別／明細表）都由 `wireTablist()` 綁定，不要各自加 onclick：
   `role="tablist"` / `role="tab"` / `aria-selected`、roving tabindex（Tab 鍵只停在選取項）、
   ←→↑↓ Home End 鍵盤切換、切換時內容 `swap-in` 淡入（`prefers-reduced-motion` 時關閉）、
