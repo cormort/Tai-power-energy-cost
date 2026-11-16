@@ -231,7 +231,7 @@
     }
     .sim-row {
       display: grid;
-      grid-template-columns: 130px 1fr 90px;
+      grid-template-columns: 190px 1fr 90px;
       align-items: center;
       gap: 0.75rem;
       padding: 0.65rem 0;
@@ -514,6 +514,7 @@
           <select id="simBaseYear" style="padding:0.35rem 0.6rem;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:0.85rem;">
             <option value="114" selected>114 年度審定決算用量（最新實績）</option>
             <option value="113">113 年度決算用量（原表基準）</option>
+            <option value="115">115 年度院核預算用量</option>
             <option value="116">116 年度院核預算用量</option>
           </select>
           <button type="button" id="simResetBtn" class="btn-export" style="padding:0.35rem 0.75rem;font-size:0.82rem;">↺ 復原預設值</button>
@@ -522,27 +523,27 @@
       <div class="sim-grid">
         <div>
           <div class="sim-row">
-            <label for="fxInput">USD/TWD 匯率</label>
+            <label for="fxInput">USD/TWD 匯率<br><small style="font-weight:400;color:var(--text-light);">僅影響燃煤台幣換算</small></label>
             <input type="range" id="fxRange" min="28" max="35" step="0.05" value="32.50" />
             <input type="number" id="fxInput" step="0.01" value="32.50" />
           </div>
           <div class="sim-row">
-            <label for="coalDelta">煤價變動 (USD/噸)</label>
+            <label for="coalDelta">煤價變動 (USD/噸)<br><small id="simCoalBase" style="font-weight:400;color:var(--text-light);"></small></label>
             <input type="range" id="coalRange" min="-50" max="50" step="1" value="10" />
             <input type="number" id="coalDelta" step="1" value="10" />
           </div>
           <div class="sim-row">
-            <label for="gasDelta">天然氣變動 (元/m³)</label>
+            <label for="gasDelta">天然氣變動 (元/m³)<br><small id="simGasBase" style="font-weight:400;color:var(--text-light);"></small></label>
             <input type="range" id="gasRange" min="-5" max="5" step="0.1" value="1" />
             <input type="number" id="gasDelta" step="0.1" value="1" />
           </div>
           <div class="sim-row">
-            <label for="oilDelta">燃料油變動 (元/公秉)</label>
+            <label for="oilDelta">燃料油變動 (元/公秉)<br><small id="simOilBase" style="font-weight:400;color:var(--text-light);"></small></label>
             <input type="range" id="oilRange" min="-5000" max="5000" step="250" value="2000" />
             <input type="number" id="oilDelta" step="100" value="2000" />
           </div>
           <div class="sim-row">
-            <label for="dieselDelta">柴油變動 (元/公秉)</label>
+            <label for="dieselDelta">柴油變動 (元/公秉)<br><small id="simDieselBase" style="font-weight:400;color:var(--text-light);"></small></label>
             <input type="range" id="dieselRange" min="-5000" max="5000" step="250" value="2000" />
             <input type="number" id="dieselDelta" step="100" value="2000" />
           </div>
@@ -957,10 +958,18 @@
       const dDiesel = Number(document.getElementById('dieselDelta').value) || 0;
       const dCarbon = Number(document.getElementById('carbonDelta').value) || 0;
 
-      const cQty = DATA.coal.find(x => x.year === baseYr).qty;
-      const gQty = DATA.gas.find(x => x.year === baseYr).qty;
-      const oQty = DATA.fuel_oil.find(x => x.year === baseYr).qty;
-      const dQty = DATA.diesel.find(x => x.year === baseYr).qty;
+      const cObj = DATA.coal.find(x => x.year === baseYr);
+      const gObj = DATA.gas.find(x => x.year === baseYr);
+      const oObj = DATA.fuel_oil.find(x => x.year === baseYr);
+      const dObj = DATA.diesel.find(x => x.year === baseYr);
+
+      const cQty = cObj.qty, gQty = gObj.qty, oQty = oObj.qty, dQty = dObj.qty;
+
+      const pct = (d, base) => base ? ` (${d >= 0 ? '+' : ''}${(d / base * 100).toFixed(1)}%)` : '';
+      document.getElementById('simCoalBase').textContent = `${baseYr}年 ${(cQty / 1e4).toFixed(1)}萬噸 @ $${cObj.price.toFixed(2)}${pct(dCoal, cObj.price)}`;
+      document.getElementById('simGasBase').textContent = `${baseYr}年 ${(gQty / 1e8).toFixed(2)}億m³ @ ${gObj.price.toFixed(2)}元${pct(dGas, gObj.price)}`;
+      document.getElementById('simOilBase').textContent = `${baseYr}年 ${(oQty / 1e4).toFixed(2)}萬公秉 @ ${Math.round(oObj.price).toLocaleString()}元${pct(dOil, oObj.price)}`;
+      document.getElementById('simDieselBase').textContent = `${baseYr}年 ${(dQty / 1e4).toFixed(2)}萬公秉 @ ${Math.round(dObj.price).toLocaleString()}元${pct(dDiesel, dObj.price)}`;
 
       const impCoal = (cQty * dCoal * fx) / 1e8;
       const impGas = (gQty * dGas) / 1e8;
