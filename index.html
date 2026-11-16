@@ -403,6 +403,9 @@
 
     /* 手機版：試算器改為「標題獨佔一列 + 滑桿與數值框」 */
     @media (max-width: 640px) {
+      .tab-btn { padding: 0.35rem 0.6rem; font-size: 0.8rem; }
+      .tabs { gap: 0.3rem; padding-bottom: 0.6rem; }
+      .toggle-btn { padding: 0.35rem 0.6rem; font-size: 0.8rem; }
       .sim-row {
         grid-template-columns: 1fr 88px;
         gap: 0.45rem 0.6rem;
@@ -415,6 +418,23 @@
       .sim-total .val { font-size: 1.3rem; white-space: nowrap; }
       .sim-item { flex-wrap: wrap; gap: 0.1rem 0.4rem; }
     }
+
+    /* ── Tab 切換的過渡與焦點 ── */
+    @keyframes tabSwap {
+      from { opacity: 0.35; transform: translateY(3px); }
+      to   { opacity: 1;    transform: none; }
+    }
+    .swap-in { animation: tabSwap 0.18s ease-out both; }
+    @media (prefers-reduced-motion: reduce) {
+      .swap-in { animation: none; }
+      .toggle-btn, .tab-btn { transition: none; }
+    }
+    .toggle-btn:focus-visible, .tab-btn:focus-visible {
+      outline: 2px solid var(--gas);
+      outline-offset: 2px;
+    }
+    .tab-btn[aria-selected="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .tabs[role="tablist"] { scroll-margin-top: 1rem; }
 
     /* 列印 / 存 PDF：去掉互動元件，卡片不跨頁切斷 */
     @media print {
@@ -1334,40 +1354,142 @@
         html += '</tbody>';
         tbl.innerHTML = html;
       }
+      // 切換分頁後把橫向捲動歸零，避免新表一開頭就被切掉
+      const wrap = tbl.closest('.table-wrap');
+      if (wrap && wrap.scrollLeft) wrap.scrollLeft = 0;
     }
 
-    // Event listeners
-    document.querySelectorAll('#scopeToggle .toggle-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#scopeToggle .toggle-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-pressed', 'false');
+    // ── Tab 控制層：統一 ARIA、鍵盤（← → Home End）、淡入過渡與 URL hash 狀態 ──
+    // 三組分頁原本各自寫 onclick，aria 與鍵盤支援不一致；集中成一支 wireTablist()。
+    function readHash() {
+      const out = {};
+      (location.hash || '').replace(/^#/, '').split('&').forEach((kv) => {
+        if (!kv) return;
+        const i = kv.indexOf('=');
+        const k = decodeURIComponent(i < 0 ? kv : kv.slice(0, i));
+        const v = i < 0 ? '' : decodeURIComponent(kv.slice(i + 1));
+        if (k) out[k] = v;
+      });
+      return out;
+    }
+    function writeHash(key, value) {
+      const h = readHash();
+      if (h[key] === value) return;
+      h[key] = value;
+      const str = Object.keys(h).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(h[k])}`).join('&');
+      try { history.replaceState(null, '', '#' + str); } catch (e) { /* file:// 或沙箱可能不允許 */ }
+    }
+
+    function wireTablist(id, opts) {
+      const box = document.getElementById(id);
+      if (!box) return null;
+      const btns = [...box.querySelectorAll('button')];
+      const isTab = opts.mode === 'tab';
+      box.setAttribute('role', isTab ? 'tablist' : 'group');
+      if (opts.label) box.setAttribute('aria-label', opts.label);
+
+      function paint(activeBtn, focus) {
+        btns.forEach((b) => {
+          const on = b === activeBtn;
+          b.classList.toggle('active', on);
+          if (isTab) {
+            b.setAttribute('role', 'tab');
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+            b.tabIndex = on ? 0 : -1;          // roving tabindex：Tab 鍵只停在選取項
+          } else {
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          }
         });
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-        currentScope = btn.dataset.scope;
+        if (focus && activeBtn) activeBtn.focus();
+      }
+
+      // 切換時讓內容淡入，避免 destroy→重建的瞬間閃白
+      function animate() {
+        if (!opts.swap) return;
+        const nodes = typeof opts.swap === 'string'
+          ? [...document.querySelectorAll(opts.swap)] : [opts.swap()];
+        nodes.filter(Boolean).forEach((el) => {
+          el.classList.remove('swap-in');
+          void el.offsetWidth;                 // 強制重排以重新啟動動畫
+          el.classList.add('swap-in');
+        });
+      }
+
+      function select(btn, focus) {
+        const value = btn.getAttribute(opts.attr);
+        paint(btn, focus);
+        opts.onChange(value);
+        animate();
+        if (opts.hashKey) writeHash(opts.hashKey, value);
+      }
+
+      btns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (btn.classList.contains('active')) return;   // 重複點不重繪
+          select(btn, false);
+        });
+        btn.addEventListener('keydown', (e) => {
+          const i = btns.indexOf(btn);
+          let n = -1;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') n = (i + 1) % btns.length;
+          else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') n = (i - 1 + btns.length) % btns.length;
+          else if (e.key === 'Home') n = 0;
+          else if (e.key === 'End') n = btns.length - 1;
+          else return;
+          e.preventDefault();
+          if (btns[n] !== btn) select(btns[n], true);
+        });
+      });
+
+      // 依目前狀態（可能來自 URL hash）同步外觀，但不觸發 onChange
+      const current = btns.find((b) => b.getAttribute(opts.attr) === opts.getValue());
+      paint(current || btns[0], false);
+      return { box, btns, attr: opts.attr, select };
+    }
+
+    // 先還原 URL 狀態，再綁定（避免先渲染預設值再重繪一次）
+    const initialHash = readHash();
+    if (initialHash.scope === 'all' || initialHash.scope === 'actual') currentScope = initialHash.scope;
+    if (initialHash.fuel === 'coal_gas' || initialHash.fuel === 'oil_diesel') currentPriceTab = initialHash.fuel;
+    if (['overview', 'coal', 'gas', 'fuel_oil', 'diesel'].includes(initialHash.table)) currentTableTab = initialHash.table;
+
+    const scopeTabs = wireTablist('scopeToggle', {
+      attr: 'data-scope', mode: 'group', label: '走勢圖顯示範圍',
+      getValue: () => currentScope,
+      hashKey: 'scope',
+      swap: '#priceChart, #qtyChart, #costStackChart',
+      onChange: (v) => {
+        currentScope = v;
         renderPriceChart();
         renderQtyChart();
         renderCostStackChart();
         renderTable();
-      });
+      }
     });
 
-    document.querySelectorAll('#priceFuelTabs .toggle-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#priceFuelTabs .toggle-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentPriceTab = btn.dataset.fuel;
-        renderPriceChart();
-      });
+    const fuelTabs = wireTablist('priceFuelTabs', {
+      attr: 'data-fuel', mode: 'tab', label: '燃料別',
+      getValue: () => currentPriceTab,
+      hashKey: 'fuel',
+      swap: '#priceChart',
+      onChange: (v) => { currentPriceTab = v; renderPriceChart(); }
     });
 
-    document.querySelectorAll('#tableTabs .tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#tableTabs .tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTableTab = btn.dataset.tab;
-        renderTable();
+    const tableTabs = wireTablist('tableTabs', {
+      attr: 'data-tab', mode: 'tab', label: '明細表燃料別',
+      getValue: () => currentTableTab,
+      hashKey: 'table',
+      swap: '#dataTable',
+      onChange: (v) => { currentTableTab = v; renderTable(); }
+    });
+
+    // 瀏覽器上一頁／下一頁時同步分頁
+    window.addEventListener('hashchange', () => {
+      const h = readHash();
+      [['fuel', fuelTabs], ['scope', scopeTabs], ['table', tableTabs]].forEach(([key, ref]) => {
+        if (!ref || !h[key]) return;
+        const btn = ref.btns.find((b) => b.getAttribute(ref.attr) === h[key]);
+        if (btn && !btn.classList.contains('active')) ref.select(btn, false);
       });
     });
 
