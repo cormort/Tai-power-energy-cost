@@ -1216,18 +1216,33 @@
         }
       });
 
-      // 3. CPC Gas Price History
+      // 3. CPC Gas Price History (continuous monthly timeline 2009-01 to 2026-08)
+      const cpcMap = Object.fromEntries(EXTRA.cpc_gas_history.map(x => [x.d, x.p]));
+      const cpcLabels = [];
+      const cpcValues = [];
+      for (let y = 2009; y <= 2026; y++) {
+        const maxM = y === 2026 ? 8 : 12;
+        for (let m = 1; m <= maxM; m++) {
+          const ym = `${y}-${String(m).padStart(2, '0')}`;
+          cpcLabels.push(ym);
+          cpcValues.push(cpcMap[ym] !== undefined ? cpcMap[ym] : null);
+        }
+      }
       new Chart(document.getElementById('cpcHistoryChart').getContext('2d'), {
         type: 'line',
         data: {
-          labels: EXTRA.cpc_gas_history.map(x => x.d),
+          labels: cpcLabels,
           datasets: [{
             label: '中油電業用戶牌價 (元/m³)',
-            data: EXTRA.cpc_gas_history.map(x => x.p),
+            data: cpcValues,
             borderColor: '#0284c7',
             backgroundColor: 'rgba(2,132,199,0.08)',
             fill: true,
-            pointRadius: (c) => c.dataIndex >= EXTRA.cpc_gas_history.length - 2 ? 5 : 0,
+            spanGaps: true,
+            pointRadius: (c) => (cpcLabels[c.dataIndex] === '2025-08' || cpcLabels[c.dataIndex] === '2026-08') ? 5 : 0,
+            segment: {
+              borderDash: (ctx) => ctx.p1DataIndex > cpcLabels.indexOf('2022-04') ? [5, 5] : undefined
+            },
             borderWidth: 2
           }]
         },
