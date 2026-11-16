@@ -486,16 +486,17 @@
                 <th>單位供電/生產成本 (元/度)</th>
                 <th>每度售電總成本 (元/度)</th>
                 <th>售電量 (億度)</th>
+                <th style="text-align:left;">電價調整重點</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td><strong>110</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">2.2784</td><td class="num">—</td><td class="num">—</td></tr>
-              <tr><td><strong>111</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">3.6635</td><td class="num">—</td><td class="num">—</td></tr>
-              <tr><td><strong>112</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">3.8624</td><td class="num">—</td><td class="num">—</td></tr>
-              <tr><td><strong>113</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">3.4827</td><td class="num">3.4110</td><td class="num">—</td><td class="num">2,390.67</td></tr>
-              <tr class="row-audit"><td><strong>114</strong></td><td><span class="pill pill-audit">審定決算</span></td><td class="num"><strong>3.9020</strong></td><td class="num">3.3127</td><td class="num">3.7156</td><td class="num">2,390.57</td></tr>
-              <tr class="row-budget"><td><strong>115</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8741</td><td class="num">3.5926</td><td class="num">—</td><td class="num">2,459.64</td></tr>
-              <tr class="row-budget"><td><strong>116</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8946</td><td class="num">3.4196</td><td class="num">—</td><td class="num">2,456.64</td></tr>
+              <tr><td><strong>110</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">2.5885</td><td class="num">2.2784</td><td class="num">—</td><td class="num">—</td><td style="text-align:left;font-size:0.78rem;">全年電價凍漲</td></tr>
+              <tr><td><strong>111</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">2.7246</td><td class="num">3.6635</td><td class="num">—</td><td class="num">—</td><td style="text-align:left;font-size:0.78rem;">7月調漲8.4%（高壓/特高壓+15%）</td></tr>
+              <tr><td><strong>112</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">3.0727</td><td class="num">3.8624</td><td class="num">—</td><td class="num">—</td><td style="text-align:left;font-size:0.78rem;">4月調漲11%（產業+11%~17%）</td></tr>
+              <tr><td><strong>113</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">3.4827</td><td class="num">3.4110</td><td class="num">—</td><td class="num">2,390.67</td><td style="text-align:left;font-size:0.78rem;">4月調漲11%、10月產業再調12.5%</td></tr>
+              <tr class="row-audit"><td><strong>114</strong></td><td><span class="pill pill-audit">審定決算</span></td><td class="num"><strong>3.9020</strong></td><td class="num">3.3127</td><td class="num">3.7156</td><td class="num">2,390.57</td><td style="text-align:left;font-size:0.78rem;">10月民生微調0.71%、產業不調整</td></tr>
+              <tr class="row-budget"><td><strong>115</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8741</td><td class="num">3.5926</td><td class="num">—</td><td class="num">2,459.64</td><td style="text-align:left;font-size:0.78rem;">電燈3.0708 / 電力4.2033元/度</td></tr>
+              <tr class="row-budget"><td><strong>116</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8946</td><td class="num">3.4196</td><td class="num">—</td><td class="num">2,456.64</td><td style="text-align:left;font-size:0.78rem;">依114/10/1現行電價表預估</td></tr>
             </tbody>
           </table>
         </div>
@@ -1131,7 +1132,7 @@
           datasets: [
             {
               label: '平均售電單價 (元/度)',
-              data: [null, null, null, 3.4827, 3.9020, 3.8741, 3.8946],
+              data: [2.5885, 2.7246, 3.0727, 3.4827, 3.9020, 3.8741, 3.8946],
               borderColor: '#059669',
               backgroundColor: 'rgba(5,150,105,0.1)',
               tension: 0.2,
