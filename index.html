@@ -615,8 +615,9 @@
         <strong>※1 口徑待確認：</strong>本欄 110 年（2.2784）與 111 年起（3.6635）之揭露基礎不一致，110→111 的 61% 跳升
         不宜直接解讀為成本變動；跨年比較請以各年度決算書「單位成本」定義為準，確認後再更新本欄標題。
         <br />
-        <strong>※2 待覆核：</strong>113、114 年售電量分別為 2,390.67、2,390.57 億度，差異僅 0.1 億度，已保留原表數值，
-        尚待與決算書覆核。
+        <strong>※2 已覆核：</strong>決算書「乙貳一」明載 114 年售電量 239,057 百萬度、113 年 239,067 百萬度
+        （兩者僅差 0.1 億度係屬實），其中電燈 71,411、電力 167,646 百萬度；電費收入 932,799 百萬元 ÷
+        239,057 百萬度 ＝ 3.9020 元/度，與本表「平均售電單價」相符。
       </p>
     </section>
 
@@ -794,7 +795,7 @@
           </div>
         </div>
         <div class="chart-box" style="height:270px;"><canvas id="genMixChart" role="img" aria-label="113 與 114 年全系統發購電結構比較圖"></canvas></div>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin:0.75rem 0 0;">※ 114 年全系統淨發購電量 2,584.13 億度（供電量 2,537.14 億度，線損率 3.19%）。</p>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin:0.75rem 0 0;" id="powerFlowNote">※ 114 年全系統發購電量 2,584.13 億度，扣除儲能用電 46.99 億度後供電量 2,537.14 億度；線路損失量 82.54 億度，線路損失率 3.19%（載入後由程式重算）。</p>
       </div>
     </section>
 
@@ -877,6 +878,21 @@
       ghg: { '113': 9078, '114': 8793 },               // 萬噸 CO₂e（火力排放；113 見 115 書、114 見 116 書）
       carbon_fee_budget: { '115': 13.1, '116': 3.76667 },   // 億元（115 編 13.1 億；116 編 376,667 千元）
       carbon_rate: { '115': 300, '116': 100 }              // 元/噸 CO2e（115 一般費率、116 優惠費率）
+    };
+
+    // ── 電力量流向與線路損失（114 決算書「乙貳一、業務計畫」）單位：千度 ──
+    // 線損不是「發購電量 − 供電量」：供電量只扣儲能用電，線損另外要扣公司自用、
+    // 廠用電、售電量（不含再生能源售電）與轉直供電量。數字對不上時 renderPowerFlowNote() 會 console.warn。
+    const POWER_FLOW = {
+      year: 114,
+      purchase: 258413180,   // 全系統發購電量
+      storage: 4698797,      // 儲能（電池）用電
+      self_use: 586017,      // 公司自用（變電所所內用電、工程及事業用電等）
+      plant_use: 481231,     // 廠用電（本廠其他機組供給）
+      sales_ex_re: 238424110,// 售電量（不含再生能源售電量）
+      direct: 5969209,       // 轉、直供電量
+      loss: 8253816,         // 線路損失量（決算書揭露值）
+      loss_rate: 3.19        // 線路損失率（%）
     };
 
     const fmtInt = (v) => v == null ? '未揭露' : Math.round(v).toLocaleString('zh-TW');
@@ -1470,6 +1486,25 @@
           </tr>`).join('');
     }
 
+    // ── 電力量流向註記：由 POWER_FLOW 重算，殘差須等於決算書揭露的線損量 ──
+    function renderPowerFlowNote() {
+      const el = document.getElementById('powerFlowNote');
+      if (!el) return;
+      const f = POWER_FLOW;
+      const yi = (v) => v / 1e5;                       // 千度 → 億度
+      const residual = f.purchase - f.storage - f.self_use - f.plant_use - f.sales_ex_re - f.direct;
+      if (Math.abs(residual - f.loss) > 1) {
+        console.warn('[powerFlow] 線損推算式不符：殘差', residual, 'vs 決算書', f.loss);
+      }
+      const rate = f.loss / f.purchase * 100;
+      el.innerHTML =
+        `※ ${f.year} 年全系統發購電量 ${fmtDec(yi(f.purchase))} 億度，扣除儲能用電 ${fmtDec(yi(f.storage))} 億度後
+         供電量 ${fmtDec(yi(f.purchase - f.storage))} 億度（＝發購 − 儲能，<strong>不是</strong>減線損）；
+         線路損失量 ${fmtDec(yi(f.loss))} 億度，係再扣除公司自用 ${fmtDec(yi(f.self_use))}、廠用電 ${fmtDec(yi(f.plant_use))}、
+         售電量 ${fmtDec(yi(f.sales_ex_re))}（不含再生能源售電）及轉直供 ${fmtDec(yi(f.direct))} 億度後之殘差，
+         線路損失率 ${fmtDec(f.loss_rate, 2)}%（＝ ${fmtDec(yi(f.loss))} ÷ ${fmtDec(yi(f.purchase))}，程式複算 ${fmtDec(rate, 2)}%）。`;
+    }
+
     function renderTariffChart() {
       if (!hasChart()) return;
       resetCanvas('tariffChart');
@@ -1667,6 +1702,7 @@
     // ── 啟動順序：先算不依賴 Chart.js 的部分，再畫圖 ──
     renderKpis();
     renderTariffTable();
+    renderPowerFlowNote();
     updateSim();
     renderTable();
 
