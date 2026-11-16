@@ -26,14 +26,19 @@
 
 ## 資料更新流程
 
-1. 新年度決算／預算書發布後，改 `index.html` 內 `const DATA`（燃料量價）與
-   `const EXTRA`（購電結構、逐月氣價、發購電結構）兩個 JSON 物件。
-2. KPI 卡片的數字是**手寫在 HTML**，不在 `DATA` 裡 —— 改資料時必須一併改 KPI 與
-   卡片說明文字（`renderTariffChart()` 的電價陣列也是手寫）。
+1. 新年度決算／預算書發布後，改 `index.html` 內 `const DATA`（燃料量價）、
+   `const TARIFF`（電價與每度成本）、`const FIN`（淨利、累積虧損、長債、碳費預算）
+   與 `const EXTRA`（購電結構、逐月氣價、發購電結構）四個資料物件。
+2. **KPI 卡片與電價表都由資料自動算**（`renderKpis()` / `renderTariffTable()`）。
+   HTML 裡仍留著一組靜態數字，但只是 JS 未執行時的備援，載入後會被覆寫 ——
+   改資料時不必再手改 KPI，只要確認備援值沒有離譜到會誤導（無 JS 環境）。
+   交叉驗證方法：改版前後各抓一次 `.kpi-card` 的 label/value/sub 做字串比對。
 3. `DATA.operating_costs` 的「其他項目（維護費等）」是由
    `總成本 − 共同 6 項` 即時推算，只要補上該年度的 `總成本` 與各項金額即可。
 4. 中油牌價 `EXTRA.cpc_gas_history` **只放實際觀測到的月份**。缺月不要補值：
    圖表以 `spanGaps:false` 斷線，並用 `gapBands` 外掛把缺口畫成灰色區塊。
+5. `TARIFF` 的 `salesCost`（每度銷售成本）與 `salesProfit`（銷售盈餘）是決算書
+   揭露值，無法由表內數字反推，因此獨立列欄、不由程式計算。
 
 ## 已知口徑註記（勿任意改掉）
 
