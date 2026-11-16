@@ -451,13 +451,14 @@
           <h2 class="card-title">單價變動對損益影響試算器（敏感度分析）</h2>
           <p class="card-desc">調整燃料單價變動幅度與匯率，即時設算全年與單月損益影響數</p>
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
           <label for="simBaseYear" style="font-size:0.84rem;font-weight:600;color:var(--navy);">基準用量：</label>
           <select id="simBaseYear" style="padding:0.35rem 0.6rem;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:0.85rem;">
             <option value="114" selected>114 年度審定決算用量（最新實績）</option>
             <option value="113">113 年度決算用量（原表基準）</option>
             <option value="116">116 年度院核預算用量</option>
           </select>
+          <button type="button" id="simResetBtn" class="btn-export" style="padding:0.35rem 0.75rem;font-size:0.82rem;">↺ 復原預設值</button>
         </div>
       </div>
       <div class="sim-grid">
@@ -813,6 +814,20 @@
         document.getElementById('fxInput').value = '32.50';
         document.getElementById('fxRange').value = '32.50';
       }
+      updateSim();
+    });
+    document.getElementById('simResetBtn').addEventListener('click', () => {
+      document.getElementById('simBaseYear').value = '114';
+      const defaults = {
+        fxRange: '32.50', fxInput: '32.50',
+        coalRange: '10', coalDelta: '10',
+        gasRange: '1', gasDelta: '1',
+        oilRange: '2000', oilDelta: '2000',
+        dieselRange: '2000', dieselDelta: '2000'
+      };
+      Object.entries(defaults).forEach(([id, val]) => {
+        document.getElementById(id).value = val;
+      });
       updateSim();
     });
 
