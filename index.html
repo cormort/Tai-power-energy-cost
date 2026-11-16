@@ -4,10 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>台電公司火力發電化石燃料成本分析（民國 101–116 年）</title>
+  <meta name="description" content="彙整台電 101–114 年決算實績與 115–116 年院核預算：火力發電化石燃料耗用量、採購均價、每度發供電成本、電價與損益敏感度試算。" />
+  <meta name="author" content="MINCHIEH" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="台電火力發電化石燃料成本分析" />
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:title" content="台電火力發電化石燃料成本分析（101–116 年）" />
+  <meta property="og:description" content="101–114 年決算實績 × 115–116 年院核預算：燃料量價、每度成本、電價與損益敏感度試算。" />
+  <meta property="og:url" content="https://cormort.github.io/Tai-power-energy-cost/" />
+  <meta property="og:image" content="https://cormort.github.io/Tai-power-energy-cost/og-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f2942'/%3E%3Cpath d='M37 6 19 36h11l-4 22 21-31H35z' fill='%230ea5e9'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -337,8 +349,90 @@
       color: var(--text-light);
       font-size: 0.82rem;
     }
-    footer a { color: var(--gas); text-decoration: none; }
+    footer a { color: var(--gas); text-decoration: none; overflow-wrap: anywhere; }
     footer a:hover { text-decoration: underline; }
+
+    /* 圖表註記（口徑、對帳、資料缺口） */
+    .chart-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin: 0.75rem 0 0;
+      padding: 0.55rem 0.7rem;
+      background: var(--surface-alt);
+      border-left: 3px solid #cbd5e1;
+      border-radius: 0 6px 6px 0;
+    }
+    .chart-note strong { color: var(--navy); }
+
+    /* 表格橫向捲動提示（僅小螢幕顯示） */
+    .scroll-hint {
+      display: none;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin: 0.4rem 0 0;
+    }
+    @media (max-width: 720px) {
+      .scroll-hint { display: block; }
+      .table-wrap {
+        -webkit-overflow-scrolling: touch;
+        box-shadow: inset -12px 0 10px -10px rgba(15, 23, 42, 0.25);
+      }
+    }
+
+    /* 電價卡片：圖表與表格上下堆疊，避免 7 欄表格被裁切 */
+    .tariff-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    /* 圖表元件未載入時的提示 */
+    .chart-fallback {
+      margin: 0 0 1.2rem;
+      padding: 0.7rem 1rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-left: 4px solid var(--danger);
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: #7f1d1d;
+    }
+    .chart-fallback[hidden] { display: none; }
+
+    /* 手機版：試算器改為「標題獨佔一列 + 滑桿與數值框」 */
+    @media (max-width: 640px) {
+      .sim-row {
+        grid-template-columns: 1fr 88px;
+        gap: 0.45rem 0.6rem;
+      }
+      .sim-row label { grid-column: 1 / -1; }
+      .sim-row input[type="range"] { min-height: 34px; }
+      .sim-toggle-group { width: 100%; }
+      .kpi-value { font-size: 1.45rem; }
+      .sim-total { flex-wrap: wrap; gap: 0.2rem 0.5rem; }
+      .sim-total .val { font-size: 1.3rem; white-space: nowrap; }
+      .sim-item { flex-wrap: wrap; gap: 0.1rem 0.4rem; }
+    }
+
+    /* 列印 / 存 PDF：去掉互動元件，卡片不跨頁切斷 */
+    @media print {
+      body { background: #fff; }
+      .controls-bar, .toggle-group, .btn-export, .tab-btn,
+      .scroll-hint, #chartFallbackNotice { display: none !important; }
+      header { padding: 1rem 1rem 0.9rem; }
+      main { padding: 0 1rem 1rem; }
+      .card, .kpi-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+      .sim-grid, .grid-2, .tariff-layout { grid-template-columns: 1fr !important; }
+      .chart-box { height: 250px; break-inside: avoid; }
+      .table-wrap { overflow: visible; box-shadow: none; }
+      table { font-size: 0.72rem; }
+      th, td { white-space: normal; }
+      .chart-note, .chart-fallback { break-inside: avoid; }
+      footer { page-break-before: auto; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
@@ -359,12 +453,16 @@
   </header>
 
   <main class="container">
+    <div class="chart-fallback" id="chartFallbackNotice" hidden>
+      <strong>圖表元件未載入</strong>：<code>chart.umd.min.js</code> 沒有載入成功（可能被網路政策或廣告封鎖器擋掉）。
+      下方的明細數據表與損益試算器仍可正常使用；如需圖表，請確認該檔案與本頁位於同一目錄。
+    </div>
     <div class="controls-bar">
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-        <span style="font-size:0.86rem;font-weight:600;color:var(--navy);">圖表顯示範圍：</span>
-        <div class="toggle-group" id="scopeToggle">
-          <button class="toggle-btn active" data-scope="all">101–116 年（含 115–116 預算）</button>
-          <button class="toggle-btn" data-scope="actual">僅決算實績（101–114 年）</button>
+        <span style="font-size:0.86rem;font-weight:600;color:var(--navy);">走勢圖顯示範圍：</span>
+        <div class="toggle-group sim-toggle-group" id="scopeToggle">
+          <button class="toggle-btn active" data-scope="all" aria-pressed="true">101–116 年（含 115–116 預算）</button>
+          <button class="toggle-btn" data-scope="actual" aria-pressed="false">僅決算實績（101–114 年）</button>
         </div>
       </div>
       <button class="btn-export" id="exportCsvBtn">⬇ 匯出完整 CSV (101–116)</button>
@@ -407,7 +505,7 @@
             <button class="toggle-btn" data-fuel="oil_diesel">燃料油 &amp; 柴油</button>
           </div>
         </div>
-        <div class="chart-box"><canvas id="priceChart"></canvas></div>
+        <div class="chart-box"><canvas id="priceChart" role="img" aria-label="化石燃料採購均價走勢折線圖，101 至 116 年，115 至 116 年為院核預算虛線"></canvas></div>
       </div>
 
       <div class="card">
@@ -417,7 +515,7 @@
             <p class="card-desc">「增氣減煤」長期軌跡（101–116 年）</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="qtyChart"></canvas></div>
+        <div class="chart-box"><canvas id="qtyChart" role="img" aria-label="燃煤與天然氣年耗用量長條圖，101 至 116 年"></canvas></div>
       </div>
     </section>
 
@@ -427,20 +525,31 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">年度燃料採購成本結構（新台幣億元）</h2>
-            <p class="card-desc">燃煤美元成本按固定參考匯率 32.5 換算（115–116 含預算用料台幣成本）</p>
+            <p class="card-desc">燃煤美元成本按固定參考匯率 32.5 換算（115–116 採預算用料台幣成本）</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="costStackChart"></canvas></div>
+        <div class="chart-box"><canvas id="costStackChart" role="img" aria-label="101 至 116 年燃煤、天然氣、燃料油、柴油採購成本堆疊圖"></canvas></div>
+        <p class="chart-note">
+          <strong>與決算實績的對帳：</strong>本圖為原料採購估算（燃煤按 32.5 固定匯率換算），113 年合計
+          <strong>3,599.36 億元</strong>、114 年 <strong>3,408.81 億元（−5.3%）</strong>；決算書「自發電燃料成本」實績為
+          <strong>3,814.75 億</strong>、<strong>3,522.36 億（−7.66%）</strong>。兩者相差 215.39 億、113.55 億，係海運費、稅什費、
+          煤場營運費及氣價合約調整等未計入採購估算，<strong>不可與 KPI 直接相減</strong>。
+        </p>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div>
             <h2 class="card-title">台電電業營運成本結構（113 vs 114 年度）</h2>
-            <p class="card-desc">資料來源：115 及 116 年院核預算書「電業營運成本」揭露表</p>
+            <p class="card-desc">資料來源：115 及 116 年院核預算書「電業營運成本」揭露表（113 年揭露 6 項、114 年揭露 10 項）</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="opCostChart"></canvas></div>
+        <div class="chart-box"><canvas id="opCostChart" role="img" aria-label="113 與 114 年度各項電業營運成本比較圖"></canvas></div>
+        <p class="chart-note">
+          <strong>114 年其餘項目：</strong>維護費 317.12、其他營業費用 180.53、其他電業經營相關費用 16.63、其他營業收入（減項）
+          −146.38，淨計 <strong>367.90 億元</strong>。六項合計 8,352.67 ＋ 367.90 ＝ 總成本 <strong>8,720.57 億元</strong>（已核對）。
+          113 年該等項目未於預算書單獨揭露，故不列示，兩年度僅就共同 6 項比較。
+        </p>
       </div>
     </section>
 
@@ -474,19 +583,19 @@
           <div class="kpi-sub">依 114/10/1 現行電價表預估；單位生產成本降至 3.4196 元/度</div>
         </div>
       </div>
-      <div class="grid-2" style="align-items:center;">
-        <div class="chart-box" style="height:280px;"><canvas id="tariffChart"></canvas></div>
+      <div class="tariff-layout">
+        <div class="chart-box" style="height:280px;"><canvas id="tariffChart" role="img" aria-label="110 至 116 年平均售電單價與單位成本比較折線圖"></canvas></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>年度</th>
-                <th>性質</th>
-                <th>平均售電單價 (元/度)</th>
-                <th>單位供電/生產成本 (元/度)</th>
-                <th>每度售電總成本 (元/度)</th>
-                <th>售電量 (億度)</th>
-                <th style="text-align:left;">電價調整重點</th>
+                <th scope="col">年度</th>
+                <th scope="col">性質</th>
+                <th scope="col">平均售電單價 (元/度)</th>
+                <th scope="col">單位成本 (元/度)<sup>※1</sup></th>
+                <th scope="col">每度售電總成本 (元/度)</th>
+                <th scope="col">售電量 (億度)<sup>※2</sup></th>
+                <th scope="col" style="text-align:left;">電價調整重點</th>
               </tr>
             </thead>
             <tbody>
@@ -499,8 +608,16 @@
               <tr class="row-budget"><td><strong>116</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8946</td><td class="num">3.4196</td><td class="num">—</td><td class="num">2,456.64</td><td style="text-align:left;font-size:0.78rem;">依114/10/1現行電價表預估</td></tr>
             </tbody>
           </table>
+          <p class="scroll-hint">↔ 表格可左右滑動檢視</p>
         </div>
       </div>
+      <p class="chart-note" style="margin-top:1.1rem;">
+        <strong>※1 口徑待確認：</strong>本欄 110 年（2.2784）與 111 年起（3.6635）之揭露基礎不一致，110→111 的 61% 跳升
+        不宜直接解讀為成本變動；跨年比較請以各年度決算書「單位成本」定義為準，確認後再更新本欄標題。
+        <br />
+        <strong>※2 待覆核：</strong>113、114 年售電量分別為 2,390.67、2,390.57 億度，差異僅 0.1 億度，已保留原表數值，
+        尚待與決算書覆核。
+      </p>
     </section>
 
     <!-- Interactive Sensitivity Simulator -->
@@ -589,6 +706,7 @@
       <div class="table-wrap">
         <table id="dataTable"></table>
       </div>
+      <p class="scroll-hint">↔ 表格可左右滑動檢視</p>
     </section>
 
     <!-- Section: Purchased Power (IPP & Renewables) -->
@@ -600,17 +718,17 @@
         </div>
       </div>
       <div class="grid-2" style="align-items:center;">
-        <div class="chart-box" style="height:310px;"><canvas id="ppChart"></canvas></div>
+        <div class="chart-box" style="height:310px;"><canvas id="ppChart" role="img" aria-label="114 與 116 年外部購電金額及 114 年購電均價比較圖"></canvas></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>購電類別</th>
-                <th>114 決算度數(億度)</th>
-                <th>114 金額(億元)</th>
-                <th>114 均價(元/度)</th>
-                <th>115 預算均價</th>
-                <th>116 預算均價</th>
+                <th scope="col">購電類別</th>
+                <th scope="col">114 決算度數(億度)</th>
+                <th scope="col">114 金額(億元)</th>
+                <th scope="col">114 均價(元/度)</th>
+                <th scope="col">115 預算均價</th>
+                <th scope="col">116 預算均價</th>
               </tr>
             </thead>
             <tbody>
@@ -623,7 +741,8 @@
               <tr class="row-audit"><td><strong>合計</strong></td><td class="num"><strong>831.05</strong></td><td class="num"><strong>3,155.03</strong></td><td class="num"><strong>3.7964</strong></td><td class="num"><strong>4.2531</strong></td><td class="num"><strong>4.0860</strong></td></tr>
             </tbody>
           </table>
-          <p style="font-size:0.76rem;color:var(--text-light);margin:0.5rem 0 0;">※ 116 年因太陽光電業者終止躉購改轉供民間增加，台電太陽能購電量由 115 預算 190.63 億度降至 172.87 億度。</p>
+          <p class="scroll-hint">↔ 表格可左右滑動檢視</p>
+          <p style="font-size:0.76rem;color:var(--text-light);margin:0.5rem 0 0;">※ 116 年因太陽光電業者終止躉購改轉供民間增加，台電太陽能購電量由 115 預算 190.63 億度降至 172.87 億度。圖表僅列 114 決算與 116 預算，115 預算請見右表。</p>
         </div>
       </div>
     </section>
@@ -637,7 +756,7 @@
             <p class="card-desc">8 月大潭單價跳升至 27.39 元/m³ 係依合約重議氣價參數補付調整款</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="gasMonthlyChart"></canvas></div>
+        <div class="chart-box"><canvas id="gasMonthlyChart" role="img" aria-label="114 年天然氣逐月統約與大潭購氣量及單價圖"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header">
@@ -646,7 +765,12 @@
             <p class="card-desc">整合既有 Excel 2009–2022 月牌價及預算書揭露 114/8 (12.77) 與 115/8 (20.44)</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="cpcHistoryChart"></canvas></div>
+        <div class="chart-box"><canvas id="cpcHistoryChart" role="img" aria-label="中油發電用天然氣月牌價走勢圖，2009 至 2026 年，中間有資料缺口"></canvas></div>
+        <p class="chart-note">
+          <strong>資料缺口（請勿讀成趨勢）：</strong>2022-05 至 2025-07 共 <strong>39 個月</strong>、
+          2025-09 至 2026-07 共 <strong>11 個月</strong>無公開月資料，圖上以灰色區塊標示並斷線，<strong>不以直線補值</strong>。
+          陰影區間內的走勢屬推定，僅 2022-04、2025-08（12.77）、2026-08（20.44）為實有觀測點。
+        </p>
       </div>
     </section>
 
@@ -659,7 +783,7 @@
             <p class="card-desc">114 年台電加權均價 101.47 美元，較亞太煤價 131.22 美元低 22.67%</p>
           </div>
         </div>
-        <div class="chart-box" style="height:270px;"><canvas id="coalBenchChart"></canvas></div>
+        <div class="chart-box" style="height:270px;"><canvas id="coalBenchChart" role="img" aria-label="113 與 114 年台電燃煤採購均價與亞太煤價比較圖"></canvas></div>
         <p style="font-size:0.78rem;color:var(--text-muted);margin:0.75rem 0 0;">※ 另台電持有澳洲「班卡拉煤礦」20% 權益，114 年度獲配煤炭 181.7 萬公噸，售煤收入 54.35 億元、分攤營運費 38.98 億元，發揮部分實質避險效果。</p>
       </div>
       <div class="card">
@@ -669,7 +793,7 @@
             <p class="card-desc">核能占比降至 1.21%（-73.4% YoY），轉直供綠電倍增至 59.69 億度</p>
           </div>
         </div>
-        <div class="chart-box" style="height:270px;"><canvas id="genMixChart"></canvas></div>
+        <div class="chart-box" style="height:270px;"><canvas id="genMixChart" role="img" aria-label="113 與 114 年全系統發購電結構比較圖"></canvas></div>
         <p style="font-size:0.78rem;color:var(--text-muted);margin:0.75rem 0 0;">※ 114 年全系統淨發購電量 2,584.13 億度（供電量 2,537.14 億度，線損率 3.19%）。</p>
       </div>
     </section>
@@ -721,6 +845,7 @@
     </ul>
   </footer>
 
+  <script src="./chart.umd.min.js"></script>
   <script>
     const EXTRA = {"cpc_gas_history": [{"d": "2009-01", "p": 13.1873}, {"d": "2009-02", "p": 13.1873}, {"d": "2009-03", "p": 13.1873}, {"d": "2009-04", "p": 13.1873}, {"d": "2009-05", "p": 13.1873}, {"d": "2009-06", "p": 13.1873}, {"d": "2009-07", "p": 14.2787}, {"d": "2009-08", "p": 14.2787}, {"d": "2009-09", "p": 14.7139}, {"d": "2009-10", "p": 14.7139}, {"d": "2009-11", "p": 15.1639}, {"d": "2009-12", "p": 15.1639}, {"d": "2010-01", "p": 15.6259}, {"d": "2010-02", "p": 15.6259}, {"d": "2010-03", "p": 15.6259}, {"d": "2010-04", "p": 15.6259}, {"d": "2010-05", "p": 15.6259}, {"d": "2010-06", "p": 15.6259}, {"d": "2010-07", "p": 15.6259}, {"d": "2010-08", "p": 15.6259}, {"d": "2010-09", "p": 15.23}, {"d": "2010-10", "p": 15.23}, {"d": "2010-11", "p": 14.7673}, {"d": "2010-12", "p": 14.7673}, {"d": "2011-01", "p": 14.7673}, {"d": "2011-02", "p": 14.7673}, {"d": "2011-03", "p": 15.2159}, {"d": "2011-04", "p": 15.6795}, {"d": "2011-05", "p": 15.6795}, {"d": "2011-06", "p": 16.1559}, {"d": "2011-07", "p": 16.647}, {"d": "2011-08", "p": 16.647}, {"d": "2011-09", "p": 17.1527}, {"d": "2011-10", "p": 17.6739}, {"d": "2011-11", "p": 17.48}, {"d": "2011-12", "p": 17.48}, {"d": "2012-01", "p": 17.48}, {"d": "2012-02", "p": 18.0101}, {"d": "2012-03", "p": 18.5552}, {"d": "2012-04", "p": 18.3504}, {"d": "2012-05", "p": 18.3504}, {"d": "2012-06", "p": 18.3504}, {"d": "2012-07", "p": 18.906}, {"d": "2012-08", "p": 19.4782}, {"d": "2012-09", "p": 19.4782}, {"d": "2012-10", "p": 19.4782}, {"d": "2012-11", "p": 20.0583}, {"d": "2012-12", "p": 20.6557}, {"d": "2013-01", "p": 20.1227}, {"d": "2013-02", "p": 20.1227}, {"d": "2013-03", "p": 20.5926}, {"d": "2013-04", "p": 20.4195}, {"d": "2013-05", "p": 20.4195}, {"d": "2013-06", "p": 19.2582}, {"d": "2013-07", "p": 19.2582}, {"d": "2013-08", "p": 19.2582}, {"d": "2013-09", "p": 19.2582}, {"d": "2013-10", "p": 19.2582}, {"d": "2013-11", "p": 19.8255}, {"d": "2013-12", "p": 19.3553}, {"d": "2014-01", "p": 19.3553}, {"d": "2014-02", "p": 19.8168}, {"d": "2014-03", "p": 20.2887}, {"d": "2014-04", "p": 19.9797}, {"d": "2014-05", "p": 19.7985}, {"d": "2014-06", "p": 19.6575}, {"d": "2014-07", "p": 19.8813}, {"d": "2014-08", "p": 19.8813}, {"d": "2014-09", "p": 19.6218}, {"d": "2014-10", "p": 19.3085}, {"d": "2014-11", "p": 19.0323}, {"d": "2014-12", "p": 17.4205}, {"d": "2015-01", "p": 15.1969}, {"d": "2015-02", "p": 13.9096}, {"d": "2015-03", "p": 13.9096}, {"d": "2015-04", "p": 13.9096}, {"d": "2015-05", "p": 12.7889}, {"d": "2015-06", "p": 12.0008}, {"d": "2015-07", "p": 12.0008}, {"d": "2015-08", "p": 11.6534}, {"d": "2015-09", "p": 11.0066}, {"d": "2015-10", "p": 11.0066}, {"d": "2015-11", "p": 10.4767}, {"d": "2015-12", "p": 10.4767}, {"d": "2016-01", "p": 10.4767}, {"d": "2016-02", "p": 9.3724}, {"d": "2016-03", "p": 9.1037}, {"d": "2016-04", "p": 8.911}, {"d": "2016-05", "p": 8.5093}, {"d": "2016-06", "p": 8.7726}, {"d": "2016-07", "p": 9.0426}, {"d": "2016-08", "p": 9.0426}, {"d": "2016-09", "p": 9.0426}, {"d": "2016-10", "p": 8.7838}, {"d": "2016-11", "p": 8.7838}, {"d": "2016-12", "p": 9.0539}, {"d": "2017-01", "p": 9.3339}, {"d": "2017-02", "p": 9.3339}, {"d": "2017-03", "p": 9.6227}, {"d": "2017-04", "p": 9.9183}, {"d": "2017-05", "p": 9.9183}, {"d": "2017-06", "p": 10.2235}, {"d": "2017-07", "p": 10.5393}, {"d": "2017-08", "p": 10.5393}, {"d": "2017-09", "p": 10.5393}, {"d": "2017-10", "p": 10.8626}, {"d": "2017-11", "p": 11.1942}, {"d": "2017-12", "p": 11.1942}, {"d": "2018-01", "p": 10.9027}, {"d": "2018-02", "p": 10.9027}, {"d": "2018-03", "p": 10.9027}, {"d": "2018-04", "p": 10.9027}, {"d": "2018-05", "p": 11.2371}, {"d": "2018-06", "p": 11.5825}, {"d": "2018-07", "p": 11.5825}, {"d": "2018-08", "p": 11.9362}, {"d": "2018-09", "p": 11.9362}, {"d": "2018-10", "p": 12.3021}, {"d": "2018-11", "p": 12.3021}, {"d": "2018-12", "p": 12.3021}, {"d": "2019-01", "p": 12.6777}, {"d": "2019-02", "p": 12.6777}, {"d": "2019-03", "p": 13.0651}, {"d": "2019-04", "p": 13.0651}, {"d": "2019-05", "p": 13.0651}, {"d": "2019-06", "p": 13.0651}, {"d": "2019-07", "p": 12.7229}, {"d": "2019-08", "p": 12.3404}, {"d": "2019-09", "p": 11.7024}, {"d": "2019-10", "p": 11.2485}, {"d": "2019-11", "p": 10.7045}, {"d": "2019-12", "p": 10.4269}, {"d": "2020-01", "p": 10.4269}, {"d": "2020-02", "p": 10.4269}, {"d": "2020-03", "p": 10.4269}, {"d": "2020-04", "p": 9.8876}, {"d": "2020-05", "p": 8.857}, {"d": "2020-06", "p": 7.9219}, {"d": "2020-07", "p": 7.4261}, {"d": "2020-08", "p": 7.1976}, {"d": "2020-09", "p": 7.1976}, {"d": "2020-10", "p": 7.1976}, {"d": "2020-11", "p": 7.3671}, {"d": "2020-12", "p": 7.5827}, {"d": "2021-01", "p": 7.5827}, {"d": "2021-02", "p": 7.5827}, {"d": "2021-03", "p": 7.5827}, {"d": "2021-04", "p": 8.0453}, {"d": "2021-05", "p": 8.2922}, {"d": "2021-06", "p": 8.2922}, {"d": "2021-07", "p": 8.5405}, {"d": "2021-08", "p": 8.7968}, {"d": "2021-09", "p": 9.0607}, {"d": "2021-10", "p": 9.5138}, {"d": "2021-11", "p": 9.9895}, {"d": "2021-12", "p": 10.489}, {"d": "2022-01", "p": 11.5379}, {"d": "2022-02", "p": 11.5379}, {"d": "2022-03", "p": 12.6917}, {"d": "2022-04", "p": 13.9609}, {"d": "2025-08", "p": 12.7705}, {"d": "2026-08", "p": 20.4382}], "gas_114_monthly": [{"m": "1月", "t_q": 11.35, "t_p": 14.4749, "d_q": 1.9, "d_p": 12.0624}, {"m": "2月", "t_q": 11.58, "t_p": 14.9678, "d_q": 1.59, "d_p": 12.1244}, {"m": "3月", "t_q": 11.84, "t_p": 15.4457, "d_q": 1.64, "d_p": 12.1951}, {"m": "4月", "t_q": 11.31, "t_p": 15.4138, "d_q": 1.67, "d_p": 11.9125}, {"m": "5月", "t_q": 13.17, "t_p": 15.4847, "d_q": 1.74, "d_p": 11.2801}, {"m": "6月", "t_q": 13.86, "t_p": 13.8672, "d_q": 1.68, "d_p": 11.0877}, {"m": "7月", "t_q": 15.12, "t_p": 13.91, "d_q": 1.99, "d_p": 11.0413}, {"m": "8月", "t_q": 15.27, "t_p": 12.7774, "d_q": 2.54, "d_p": 27.3941}, {"m": "9月", "t_q": 14.81, "t_p": 12.7214, "d_q": 2.4, "d_p": 10.9815}, {"m": "10月", "t_q": 15.89, "t_p": 12.8424, "d_q": 2.47, "d_p": 10.8598}, {"m": "11月", "t_q": 13.48, "t_p": 12.3475, "d_q": 2.4, "d_p": 10.8111}, {"m": "12月", "t_q": 11.86, "t_p": 12.3581, "d_q": 2.32, "d_p": 10.9635}], "purchased_power": [{"cat": "汽電共生", "q114": 109.78, "c114": 312.13, "p114": 2.8432, "q115": 74.57, "c115": 221.91, "p115": 2.976, "q116": 97.79, "c116": 289.39, "p116": 2.9592}, {"cat": "民營電廠-燃煤", "q114": 151.7, "c114": 412.25, "p114": 2.7175, "q115": 87.32, "c115": 286.89, "p115": 3.2854, "q116": 85.74, "c116": 300.67, "p116": 3.5066}, {"cat": "民營電廠-燃氣", "q114": 332.15, "c114": 1115.46, "p114": 3.3583, "q115": 350.3, "c115": 1307.05, "p115": 3.7313, "q116": 339.0, "c116": 1124.93, "p116": 3.3184}, {"cat": "離岸風力", "q114": 100.48, "c114": 663.91, "p114": 6.6077, "q115": 121.76, "c115": 802.11, "p115": 6.5876, "q116": 127.16, "c116": 834.95, "p116": 6.5662}, {"cat": "太陽能", "q114": 127.74, "c114": 625.83, "p114": 4.8992, "q115": 190.63, "c115": 902.54, "p115": 4.7344, "q116": 172.87, "c116": 821.77, "p116": 4.7537}, {"cat": "水力/陸風/其他再生", "q114": 9.2, "c114": 25.44, "p114": 2.7652, "q115": 13.98, "c115": 45.95, "p115": 3.2873, "q116": 15.53, "c116": 52.76, "p116": 3.3979}], "coal_benchmark": [{"cat": "新簽長約", "tp113": 112.64, "ap113": 160.2, "tp114": 102.97, "ap114": 159.58}, {"cat": "議價長約(2年起)", "tp113": 138.36, "ap113": 150.67, "tp114": 103.51, "ap114": 134.78}, {"cat": "現貨", "tp113": 107.28, "ap113": 140.64, "tp114": 95.64, "ap114": 110.12}, {"cat": "加權平均", "tp113": 132.47, "ap113": 150.08, "tp114": 101.47, "ap114": 131.22}], "gen_mix": [{"cat": "自發火力", "g113": 1524.18, "g114": 1564.56}, {"cat": "自發核能", "g113": 117.27, "g114": 31.19}, {"cat": "自發水力/再生/儲能", "g113": 79.5, "g114": 85.11}, {"cat": "外購民營電廠(IPP)", "g113": 480.05, "g114": 487.07}, {"cat": "外購再生能源", "g113": 226.9, "g114": 239.82}, {"cat": "外購汽電共生/儲能", "g113": 86.56, "g114": 116.68}, {"cat": "轉直供電量", "g113": 29.99, "g114": 59.69}]};
     const DATA = {"coal": [{"year": 101, "type": "決算", "qty": 28074830, "price": 103.38, "cost": 2902375925.4}, {"year": 102, "type": "決算", "qty": 26225463, "price": 84.26, "cost": 2209757512.38}, {"year": 103, "type": "決算", "qty": 26320435, "price": 75.93, "cost": 1998510629.5500002}, {"year": 104, "type": "決算", "qty": 24500797, "price": 62.62, "cost": 1534239908.1399999}, {"year": 105, "type": "決算", "qty": 26164206, "price": 53.95, "cost": 1411558913.7}, {"year": 106, "type": "決算", "qty": 28974528, "price": 80.23, "cost": 2324626381.44}, {"year": 107, "type": "決算", "qty": 28972347, "price": 98.75, "cost": 2861019266.25}, {"year": 108, "type": "決算", "qty": 27443124, "price": 84.54, "cost": 2320041702.96}, {"year": 109, "type": "決算", "qty": 26937478, "price": 63.78, "cost": 1718072346.84}, {"year": 110, "type": "決算", "qty": 28304209, "price": 94.36, "cost": 2670785161.24}, {"year": 111, "type": "決算", "qty": 28115372, "price": 275.58, "cost": 7748034215.759999}, {"year": 112, "type": "決算", "qty": 26823107, "price": 206.76, "cost": 5545945603.32}, {"year": 113, "type": "決算", "qty": 24562610, "price": 132.47, "cost": 3253808946.7}, {"year": 114, "type": "審定決算", "qty": 21617000, "price": 101.47, "cost": 2193476990.0, "note": "耗用量採乙貳一實績 21,617 千公噸（乙捌採購量 2,059 萬公噸）；單價採乙捌加權平均 101.47 美元/公噸"}, {"year": 115, "type": "院核預算", "qty": 21654833, "price": 128.54, "cost": 2783512233.8199997, "ntd_price": 4127, "ntd_cost": 89369496000, "note": "國際煤價基準 128.54 美元/公噸；含海運費及煤場營運費後用料單價 4,127 元/公噸"}, {"year": 116, "type": "院核預算", "qty": 20865157, "price": 138.62, "cost": 2892328063.34, "ntd_price": 4743, "ntd_cost": 98963438000, "note": "國際煤價基準 138.62 美元/公噸；含海運費及煤場營運費後用料單價 4,743 元/公噸"}], "gas": [{"year": 101, "type": "決算", "qty": 10000703000, "price": null, "cost": null}, {"year": 102, "type": "決算", "qty": 10228689000, "price": 17.192296761316637, "cost": 175854656767.21512}, {"year": 103, "type": "決算", "qty": 10898114000, "price": 17.59828787850828, "cost": 191788147504.8014}, {"year": 104, "type": "決算", "qty": 11964567000, "price": 11.590727846877964, "cost": 138678039902.73715}, {"year": 105, "type": "決算", "qty": 12609493000, "price": 9.059473412766177, "cost": 114235366581.96123}, {"year": 106, "type": "決算", "qty": 14113291000, "price": 9.398473577200917, "cost": 132643392550.84752}, {"year": 107, "type": "決算", "qty": 14089499000, "price": 10.659894778770806, "cost": 150192576825.5965}, {"year": 108, "type": "決算", "qty": 13371961000, "price": 11.44545958773802, "cost": 153048239234.30887}, {"year": 109, "type": "決算", "qty": 15075198000, "price": 8.074410596985192, "cost": 121723338482.84998}, {"year": 110, "type": "決算", "qty": 15846237000, "price": 9.653675092760524, "cost": 152974423440.88025}, {"year": 111, "type": "決算", "qty": 16394729634, "price": 15.377561518678972, "cost": 252110963528.94418}, {"year": 112, "type": "決算", "qty": 15671332859, "price": 16.47763003183991, "cost": 258226424956.41803}, {"year": 113, "type": "決算", "qty": 16750063507, "price": 14.123504435530624, "cost": 236569596236.53412}, {"year": 114, "type": "審定決算", "qty": 18388726104, "price": 13.69571316759259, "cost": 251846718237.8064, "note": "統約 159.54 億 m³ (@13.8013) + 大潭 24.34 億 m³ (@13.0037)"}, {"year": 115, "type": "院核預算", "qty": 19743646000, "price": 15.3469, "cost": 303003225000, "note": "統約 173.02 億 m³ (@15.7933) + 大潭 24.42 億 m³ (@12.183)"}, {"year": 116, "type": "院核預算", "qty": 19865601000, "price": 13.4221, "cost": 266638624000, "note": "統約 174.31 億 m³ (@13.6893) + 大潭 24.35 億 m³ (@11.509)"}], "fuel_oil": [{"year": 101, "type": "決算", "qty": 1385607, "price": null, "cost": null}, {"year": 102, "type": "決算", "qty": 1286952, "price": 21468, "cost": 27628285536}, {"year": 103, "type": "決算", "qty": 1567705, "price": 21398, "cost": 33545751590}, {"year": 104, "type": "決算", "qty": 2470300, "price": 14214, "cost": 35112844200}, {"year": 105, "type": "決算", "qty": 2427005, "price": 11553, "cost": 28039188765}, {"year": 106, "type": "決算", "qty": 2663258, "price": 12301, "cost": 32760736658}, {"year": 107, "type": "決算", "qty": 1601624, "price": 16790, "cost": 26891266960}, {"year": 108, "type": "決算", "qty": 1103224, "price": 16611, "cost": 18325653864}, {"year": 109, "type": "決算", "qty": 757896, "price": 12888, "cost": 9767763648}, {"year": 110, "type": "決算", "qty": 960602, "price": 16108, "cost": 15473377016}, {"year": 111, "type": "決算", "qty": 863028, "price": 25279, "cost": 21816484812}, {"year": 112, "type": "決算", "qty": 762164.272, "price": 21328, "cost": 16255439593.216}, {"year": 113, "type": "決算", "qty": 786703.701, "price": 21177, "cost": 16660024276.077}, {"year": 114, "type": "審定決算", "qty": 931717.117, "price": 17871, "cost": 16650716597.907, "note": "乙捌 114 年採購量 931,717.117 公秉（乙貳一實績 885 千公秉）"}, {"year": 115, "type": "院核預算", "qty": 1039048, "price": 19814, "cost": 20588104000, "note": "中油自煉 14.4 萬公秉 (@20,210) + 代進口 89.5 萬公秉 (@19,751)"}, {"year": 116, "type": "院核預算", "qty": 1152030, "price": 19565, "cost": 22539668000, "note": "中油自煉 15.3 萬公秉 (@22,838) + 代進口 99.9 萬公秉 (@19,064)"}], "diesel": [{"year": 101, "type": "決算", "qty": 48060, "price": null, "cost": null}, {"year": 102, "type": "決算", "qty": 48249, "price": 29965, "cost": 1445781285}, {"year": 103, "type": "決算", "qty": 78696, "price": 28724, "cost": 2260463904}, {"year": 104, "type": "決算", "qty": 134418, "price": 19970, "cost": 2684327460}, {"year": 105, "type": "決算", "qty": 125258, "price": 17569, "cost": 2200657802}, {"year": 106, "type": "決算", "qty": 134208, "price": 19386, "cost": 2601756288}, {"year": 107, "type": "決算", "qty": 88775, "price": 22944, "cost": 2036853600}, {"year": 108, "type": "決算", "qty": 75069, "price": 21607, "cost": 1622015883}, {"year": 109, "type": "決算", "qty": 59599, "price": 16563, "cost": 987138237}, {"year": 110, "type": "決算", "qty": 78153, "price": 20232, "cost": 1581191496}, {"year": 111, "type": "決算", "qty": 54579.738, "price": 22886, "cost": 1249111883.868}, {"year": 112, "type": "決算", "qty": 41310.299, "price": 22994, "cost": 949889015.206}, {"year": 113, "type": "決算", "qty": 41569.349, "price": 23044, "cost": 957924078.3560001}, {"year": 114, "type": "審定決算", "qty": 49847.907, "price": 21981, "cost": 1095706843.767, "note": "乙捌 114 年採購量 49,847.907 公秉"}, {"year": 115, "type": "院核預算", "qty": 117885, "price": 25638, "cost": 3022336000, "note": "預估國內售價 25,638 元/公秉"}, {"year": 116, "type": "院核預算", "qty": 115949, "price": 28170, "cost": 3266305000, "note": "預估國內售價 28,170 元/公秉"}], "operating_costs": {"113": {"自發電燃料成本": 3814.75, "外部購電費用": 3076.96, "折舊": 953.11, "用人費用": 365.98, "利息": 299.71, "稅捐及規費": 69.31}, "114": {"自發電燃料成本": 3522.36, "外部購電費用": 3155.03, "折舊": 939.7, "用人費用": 379.94, "維護費": 317.12, "利息": 277.77, "其他營業費用": 180.53, "稅捐及規費": 77.87, "其他電業經營相關費用": 16.63, "其他營業收入(減項)": -146.38, "總成本": 8720.57}}};
@@ -728,6 +853,49 @@
     const fmtInt = (v) => v == null ? '未揭露' : Math.round(v).toLocaleString('zh-TW');
     const fmtDec = (v, d = 2) => v == null ? '未揭露' : Number(v).toLocaleString('zh-TW', { minimumFractionDigits: d, maximumFractionDigits: d });
     const fmtYi = (v) => v == null ? '未揭露' : (v / 1e8).toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' 億';
+
+    // ── 圖表容錯層 ────────────────────────────────────────────────
+    // Chart.js 沒載入（例如機關網路封鎖 CDN）或單張圖出錯時，明細表與試算器仍須可用，
+    // 因此所有繪圖呼叫都經 withChart() 包裝，失敗只記錄 console，不中斷後續 script。
+    const hasChart = () => typeof Chart !== 'undefined';
+    function withChart(name, fn) {
+      if (!hasChart()) return false;
+      try { fn(); return true; } catch (err) { console.error('[chart:' + name + ']', err); return false; }
+    }
+    function resetCanvas(id) {
+      if (!hasChart() || !id) return;
+      const prev = Chart.getChart(id);
+      if (prev) prev.destroy();
+    }
+    // 首屏外的圖表延後到接近視窗才建立，降低初次載入的 CPU 尖峰
+    function lazyCanvas(canvasId, init) {
+      const el = document.getElementById(canvasId);
+      if (!el) return;
+      const run = () => withChart(canvasId, init);
+      if (!('IntersectionObserver' in window)) { run(); return; }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => { if (en.isIntersecting) { io.disconnect(); run(); } });
+      }, { rootMargin: '250px 0px' });
+      io.observe(el.parentElement || el);
+    }
+    // 缺口陰影外掛：把「沒有資料」的月份畫成灰色區塊，避免直線補值被誤讀為趨勢
+    const gapBandsPlugin = {
+      id: 'gapBands',
+      beforeDatasetsDraw(chart, args, opts) {
+        const ranges = (opts && opts.ranges) || [];
+        const area = chart.chartArea;
+        if (!area || !ranges.length) return;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.fillStyle = 'rgba(148,163,184,0.22)';
+        ranges.forEach((r) => {
+          const x1 = chart.scales.x.getPixelForValue(r[0]);
+          const x2 = chart.scales.x.getPixelForValue(r[1]);
+          ctx.fillRect(x1, area.top, Math.max(x2 - x1, 2), area.bottom - area.top);
+        });
+        ctx.restore();
+      }
+    };
 
     let currentScope = 'all';
     let currentPriceTab = 'coal_gas';
@@ -741,6 +909,7 @@
     let priceChart, qtyChart, costStackChart, opCostChart;
 
     function renderPriceChart() {
+      if (!hasChart()) return;
       const coal = getFiltered(DATA.coal);
       const gas = getFiltered(DATA.gas);
       const oil = getFiltered(DATA.fuel_oil);
@@ -823,6 +992,7 @@
     }
 
     function renderQtyChart() {
+      if (!hasChart()) return;
       const coal = getFiltered(DATA.coal);
       const gas = getFiltered(DATA.gas);
       const labels = coal.map(x => x.year + (x.year >= 115 ? '(預)' : ''));
@@ -867,6 +1037,7 @@
     }
 
     function renderCostStackChart() {
+      if (!hasChart()) return;
       const coal = getFiltered(DATA.coal).filter(x => x.year >= 102);
       const gas = getFiltered(DATA.gas).filter(x => x.year >= 102);
       const oil = getFiltered(DATA.fuel_oil).filter(x => x.year >= 102);
@@ -917,23 +1088,30 @@
     }
 
     function renderOpCostChart() {
-      const ctx = document.getElementById('opCostChart').getContext('2d');
+      if (!hasChart()) return;
+      const el = document.getElementById('opCostChart');
+      const ctx = el.getContext('2d');
       if (opCostChart) opCostChart.destroy();
-      const cats = ['自發電燃料成本', '外部購電費用', '折舊', '用人費用', '利息', '稅捐及規費'];
+      const oc = DATA.operating_costs;
+      const shared = ['自發電燃料成本', '外部購電費用', '折舊', '用人費用', '利息', '稅捐及規費'];
+      // 114 年另有維護費、其他營業費用、其他營業收入減項等 4 項未列於圖上；
+      // 以「總成本 − 共同 6 項」得出淨額（367.90 億），確保圖上合計可與 8,720.57 億對帳。
+      const other114 = Number((oc['114']['總成本'] - shared.reduce((a, c) => a + oc['114'][c], 0)).toFixed(2));
+      const labels = shared.concat(['其他項目（維護費等）']);
       opCostChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: cats,
+          labels,
           datasets: [
             {
               label: '113 年度 (億元)',
-              data: cats.map(c => DATA.operating_costs['113'][c]),
+              data: shared.map(c => oc['113'][c] ?? null).concat([null]),
               backgroundColor: 'rgba(100, 116, 139, 0.75)',
               borderRadius: 4
             },
             {
               label: '114 年度 (億元)',
-              data: cats.map(c => DATA.operating_costs['114'][c]),
+              data: shared.map(c => oc['114'][c]).concat([other114]),
               backgroundColor: 'rgba(2, 132, 199, 0.85)',
               borderRadius: 4
             }
@@ -942,8 +1120,16 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (c) => `${c.dataset.label}：${c.parsed.y == null ? '未揭露' : c.parsed.y.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' 億元'}`
+              }
+            }
+          },
           scales: {
+            x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0, font: { size: 11 } } },
             y: { title: { display: true, text: '新台幣億元' } }
           }
         }
@@ -1029,25 +1215,28 @@
     });
 
     // Table rendering
+    const byYear = (arr) => Object.fromEntries(arr.map(x => [x.year, x]));
     function renderTable() {
       const tbl = document.getElementById('dataTable');
       const badge = (t) => t === '院核預算' ? '<span class="pill pill-budget">院核預算</span>' : (t === '審定決算' ? '<span class="pill pill-audit">審定決算</span>' : '<span class="pill pill-actual">決算</span>');
       const rowCls = (t) => t === '院核預算' ? 'row-budget' : (t === '審定決算' ? 'row-audit' : '');
+      // 以「年度」對齊各燃料，不以陣列索引對齊（缺年度時才不會整欄錯位）
+      const gasBy = byYear(DATA.gas), oilBy = byYear(DATA.fuel_oil), dieselBy = byYear(DATA.diesel);
 
       if (currentTableTab === 'overview') {
-        let html = '<thead><tr><th>年度</th><th>性質</th><th>煤耗用量(萬噸)</th><th>煤均價(USD/噸)</th><th>天然氣(億m³)</th><th>氣均價(元/m³)</th><th>燃料油(萬公秉)</th><th>油均價(元/公秉)</th><th>柴油(萬公秉)</th><th>柴均價(元/公秉)</th></tr></thead><tbody>';
-        DATA.coal.forEach((c, i) => {
-          const g = DATA.gas[i], o = DATA.fuel_oil[i], d = DATA.diesel[i];
+        let html = '<thead><tr><th scope="col">年度</th><th scope="col">性質</th><th scope="col">煤耗用量(萬噸)</th><th scope="col">煤均價(USD/噸)</th><th scope="col">天然氣(億m³)</th><th scope="col">氣均價(元/m³)</th><th scope="col">燃料油(萬公秉)</th><th scope="col">油均價(元/公秉)</th><th scope="col">柴油(萬公秉)</th><th scope="col">柴均價(元/公秉)</th></tr></thead><tbody>';
+        getFiltered(DATA.coal).forEach((c) => {
+          const g = gasBy[c.year] || {}, o = oilBy[c.year] || {}, d = dieselBy[c.year] || {};
           html += `<tr class="${rowCls(c.type)}">
             <td><strong>${c.year}</strong></td>
             <td>${badge(c.type)}</td>
-            <td class="num">${fmtDec(c.qty / 1e4, 1)}</td>
+            <td class="num">${fmtDec(c.qty == null ? null : c.qty / 1e4, 1)}</td>
             <td class="num">${fmtDec(c.price, 2)}</td>
-            <td class="num">${fmtDec(g.qty / 1e8, 2)}</td>
+            <td class="num">${fmtDec(g.qty == null ? null : g.qty / 1e8, 2)}</td>
             <td class="num">${g.price ? fmtDec(g.price, 4) : '未揭露'}</td>
-            <td class="num">${fmtDec(o.qty / 1e4, 2)}</td>
+            <td class="num">${fmtDec(o.qty == null ? null : o.qty / 1e4, 2)}</td>
             <td class="num">${o.price ? fmtInt(o.price) : '未揭露'}</td>
-            <td class="num">${fmtDec(d.qty / 1e4, 2)}</td>
+            <td class="num">${fmtDec(d.qty == null ? null : d.qty / 1e4, 2)}</td>
             <td class="num">${d.price ? fmtInt(d.price) : '未揭露'}</td>
           </tr>`;
         });
@@ -1060,15 +1249,15 @@
           fuel_oil: { arr: DATA.fuel_oil, u: '公秉', p: '元/公秉', c: '億元', dec: 0, div: 1e8 },
           diesel: { arr: DATA.diesel, u: '公秉', p: '元/公秉', c: '億元', dec: 0, div: 1e8 }
         }[currentTableTab];
-        let html = `<thead><tr><th>年度</th><th>性質</th><th>年耗用量 (${map.u})</th><th>月均耗用量 (${map.u})</th><th>採購均價 (${map.p})</th><th>年採購成本 (${map.c})</th><th>月均成本 (${map.c})</th><th>備註</th></tr></thead><tbody>`;
-        map.arr.forEach(x => {
+        let html = `<thead><tr><th scope="col">年度</th><th scope="col">性質</th><th scope="col">年耗用量 (${map.u})</th><th scope="col">月均耗用量 (${map.u})</th><th scope="col">採購均價 (${map.p})</th><th scope="col">年採購成本 (${map.c})</th><th scope="col">月均成本 (${map.c})</th><th scope="col">備註</th></tr></thead><tbody>`;
+        getFiltered(map.arr).forEach(x => {
           const costStr = x.cost == null ? '未揭露' : fmtDec(x.cost / map.div, 2);
           const mCostStr = x.cost == null ? '未揭露' : fmtDec(x.cost / 12 / map.div, 2);
           html += `<tr class="${rowCls(x.type)}">
             <td><strong>${x.year}</strong></td>
             <td>${badge(x.type)}</td>
             <td class="num">${fmtInt(x.qty)}</td>
-            <td class="num">${fmtInt(x.qty / 12)}</td>
+            <td class="num">${fmtInt(x.qty == null ? null : x.qty / 12)}</td>
             <td class="num">${x.price == null ? '未揭露' : fmtDec(x.price, map.dec)}</td>
             <td class="num">${costStr}</td>
             <td class="num">${mCostStr}</td>
@@ -1083,12 +1272,17 @@
     // Event listeners
     document.querySelectorAll('#scopeToggle .toggle-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#scopeToggle .toggle-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#scopeToggle .toggle-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         currentScope = btn.dataset.scope;
         renderPriceChart();
         renderQtyChart();
         renderCostStackChart();
+        renderTable();
       });
     });
 
@@ -1111,11 +1305,27 @@
     });
 
     document.getElementById('exportCsvBtn').addEventListener('click', () => {
-      const header = ['年度', '性質', '煤耗用量(公噸)', '煤均價(USD)', '天然氣耗用量(m3)', '天然氣均價(NTD)', '燃料油耗用量(公秉)', '燃料油均價(NTD)', '柴油耗用量(公秉)', '柴油均價(NTD)'];
-      const lines = [header.join(',')];
-      DATA.coal.forEach((c, i) => {
-        const g = DATA.gas[i], o = DATA.fuel_oil[i], d = DATA.diesel[i];
-        lines.push([c.year, c.type, c.qty, c.price ?? '', g.qty, g.price ? g.price.toFixed(4) : '', o.qty, o.price ?? '', d.qty, d.price ?? ''].join(','));
+      const header = ['年度', '性質', '煤耗用量(公噸)', '煤均價(USD/噸)', '煤年採購成本(億美元)',
+        '天然氣耗用量(m3)', '天然氣均價(元/m³)', '天然氣年採購成本(億元)',
+        '燃料油耗用量(公秉)', '燃料油均價(元/公秉)', '燃料油年採購成本(億元)',
+        '柴油耗用量(公秉)', '柴油均價(元/公秉)', '柴油年採購成本(億元)', '備註'];
+      const gasByYear = byYear(DATA.gas), oilByYear = byYear(DATA.fuel_oil), dieselByYear = byYear(DATA.diesel);
+      const costCell = (v) => (v == null ? '' : (v / 1e8).toFixed(2));
+      // CSV 以標準引號包裹處理內含逗號的備註（Excel 可正確解析）
+      const q = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+      const cell = (arr) => arr.filter(v => v !== undefined && v !== null && v !== '').join(' / ');
+      const lines = [header.map(q).join(',')];
+      DATA.coal.forEach((c) => {
+        const g = gasByYear[c.year] || {}, o = oilByYear[c.year] || {}, d = dieselByYear[c.year] || {};
+        const note = cell([c.note, g.note, o.note, d.note]);
+        lines.push([
+          c.year, c.type,
+          c.qty ?? '', c.price ?? '', costCell(c.cost),
+          g.qty ?? '', g.price ? g.price.toFixed(4) : '', costCell(g.cost),
+          o.qty ?? '', o.price ?? '', costCell(o.cost),
+          d.qty ?? '', d.price ?? '', costCell(d.cost),
+          note
+        ].map(q).join(','));
       });
       const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -1125,6 +1335,8 @@
     });
 
     function renderTariffChart() {
+      if (!hasChart()) return;
+      resetCanvas('tariffChart');
       const ctx = document.getElementById('tariffChart').getContext('2d');
       new Chart(ctx, {
         type: 'line',
@@ -1141,7 +1353,7 @@
               segment: { borderDash: (c) => c.p1DataIndex >= 5 ? [5, 5] : undefined }
             },
             {
-              label: '單位供電/生產成本 (元/度)',
+              label: '單位成本 (元/度)',
               data: [2.2784, 3.6635, 3.8624, 3.4110, 3.3127, 3.5926, 3.4196],
               borderColor: '#dc2626',
               backgroundColor: 'rgba(220,38,38,0.1)',
@@ -1163,14 +1375,9 @@
       });
     }
 
-    renderPriceChart();
-    renderQtyChart();
-    renderCostStackChart();
-    renderOpCostChart();
-    renderTariffChart();
-
-    function renderExtraCharts() {
-      // 1. Purchased Power Chart
+    // ── 首屏外圖表：各自獨立、延後建立、可單獨失敗 ──
+    function renderPpChart() {
+      resetCanvas('ppChart');
       new Chart(document.getElementById('ppChart').getContext('2d'), {
         type: 'bar',
         data: {
@@ -1192,7 +1399,10 @@
         }
       });
 
-      // 2. Gas 114 Monthly Chart
+    }
+
+    function renderGasMonthlyChart() {
+      resetCanvas('gasMonthlyChart');
       new Chart(document.getElementById('gasMonthlyChart').getContext('2d'), {
         type: 'bar',
         data: {
@@ -1216,7 +1426,10 @@
         }
       });
 
-      // 3. CPC Gas Price History (continuous monthly timeline 2009-01 to 2026-08)
+    }
+
+    function renderCpcChart() {
+      resetCanvas('cpcHistoryChart');
       const cpcMap = Object.fromEntries(EXTRA.cpc_gas_history.map(x => [x.d, x.p]));
       const cpcLabels = [];
       const cpcValues = [];
@@ -1238,25 +1451,43 @@
             borderColor: '#0284c7',
             backgroundColor: 'rgba(2,132,199,0.08)',
             fill: true,
-            spanGaps: true,
-            pointRadius: (c) => (cpcLabels[c.dataIndex] === '2025-08' || cpcLabels[c.dataIndex] === '2026-08') ? 5 : 0,
+            // 不以直線跨接缺口：2022-05～2025-07、2025-09～2026-07 無公開月資料
+            spanGaps: false,
+            pointRadius: (c) => (['2022-04', '2025-08', '2026-08'].includes(cpcLabels[c.dataIndex]) ? 4 : 0),
+            pointBackgroundColor: '#0284c7',
             segment: {
               borderDash: (ctx) => ctx.p1DataIndex > cpcLabels.indexOf('2022-04') ? [5, 5] : undefined
             },
             borderWidth: 2
           }]
         },
+        plugins: [gapBandsPlugin],
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
+          plugins: {
+            legend: { position: 'bottom' },
+            gapBands: {
+              ranges: [
+                [cpcLabels.indexOf('2022-04'), cpcLabels.indexOf('2025-08')],
+                [cpcLabels.indexOf('2025-08'), cpcLabels.indexOf('2026-08')]
+              ]
+            },
+            tooltip: {
+              callbacks: {
+                label: (c) => `中油牌價：${c.parsed.y == null ? '無公開月資料' : c.parsed.y.toFixed(3) + ' 元/m³'}`
+              }
+            }
+          },
           scales: {
             x: { ticks: { maxTicksLimit: 10 } },
             y: { title: { display: true, text: '新台幣元 / m³' } }
           }
         }
       });
+    }
 
-      // 4. Coal Benchmark Chart
+    function renderCoalBenchChart() {
+      resetCanvas('coalBenchChart');
       new Chart(document.getElementById('coalBenchChart').getContext('2d'), {
         type: 'bar',
         data: {
@@ -1275,7 +1506,10 @@
         }
       });
 
-      // 5. Generation Mix Chart
+    }
+
+    function renderGenMixChart() {
+      resetCanvas('genMixChart');
       new Chart(document.getElementById('genMixChart').getContext('2d'), {
         type: 'bar',
         data: {
@@ -1292,10 +1526,26 @@
         }
       });
     }
-    renderExtraCharts();
-
+    // ── 啟動順序：先算不依賴 Chart.js 的部分，再畫圖 ──
     updateSim();
     renderTable();
+
+    if (!hasChart()) {
+      const notice = document.getElementById('chartFallbackNotice');
+      if (notice) notice.hidden = false;
+      console.warn('Chart.js 未載入（chart.umd.min.js 缺失或被封鎖），已跳過繪圖，明細表與試算器仍可使用。');
+    } else {
+      withChart('price', renderPriceChart);
+      withChart('qty', renderQtyChart);
+      withChart('costStack', renderCostStackChart);
+      lazyCanvas('opCostChart', renderOpCostChart);
+      lazyCanvas('tariffChart', renderTariffChart);
+      lazyCanvas('ppChart', renderPpChart);
+      lazyCanvas('gasMonthlyChart', renderGasMonthlyChart);
+      lazyCanvas('cpcHistoryChart', renderCpcChart);
+      lazyCanvas('coalBenchChart', renderCoalBenchChart);
+      lazyCanvas('genMixChart', renderGenMixChart);
+    }
   </script>
 </body>
 </html>
