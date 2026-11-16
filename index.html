@@ -825,9 +825,15 @@
         <div class="kpi-card" style="border-top-color:#059669;">
           <div class="kpi-label"><span>溫室氣體與碳費預算</span><span class="pill pill-budget">115–116 預算</span></div>
           <div class="kpi-value num" id="kpiCarbon">13.1 → 3.77 億</div>
-          <div class="kpi-sub" id="kpiCarbonSub">113 年火力排放 9,078 萬噸 CO₂e；碳費預算 115 年 13.1 億、116 年 3.77 億（計費基礎詳決算書）</div>
+          <div class="kpi-sub" id="kpiCarbonSub">費率 300 → 100 元/噸；反推收費排放量 436.7 → 376.7 萬噸（114 年火力排放 8,793 萬噸）</div>
         </div>
       </div>
+      <p class="chart-note" id="carbonNote">
+        <strong>碳費 ≠ 火力排放 × 費率：</strong>依《碳費收費辦法》第 5 條，碳費 ＝ 收費排放量 × 費率，
+        收費排放量 ＝（年排放量 − 2.5 萬噸）× 係數；第 8 條並允許生產電力事業扣除「提供電力消費之排放量」，
+        故台電實際被課徵的量遠低於全公司排放。115 年 13.1 億 ÷ 300 元/噸 ≈ 436.7 萬噸（約 113 年火力排放的 4.81%）。
+        （載入後由程式重算）
+      </p>
     </section>
 
   </main>
@@ -868,8 +874,9 @@
       accumulated_loss: 4257.57,
       long_term_debt: 10387.84,
       working_capital: -7220.34,
-      ghg: { '113': 9078 },                            // 萬噸 CO₂e（火力排放）
-      carbon_fee_budget: { '115': 13.1, '116': 3.77 }  // 億元
+      ghg: { '113': 9078, '114': 8793 },               // 萬噸 CO₂e（火力排放；113 見 115 書、114 見 116 書）
+      carbon_fee_budget: { '115': 13.1, '116': 3.76667 },   // 億元（115 編 13.1 億；116 編 376,667 千元）
+      carbon_rate: { '115': 300, '116': 100 }              // 元/噸 CO2e（115 一般費率、116 優惠費率）
     };
 
     const fmtInt = (v) => v == null ? '未揭露' : Math.round(v).toLocaleString('zh-TW');
@@ -1421,8 +1428,29 @@
       setKpi('kpiFixed', `${fmtDec(dep + intr)} 億元`);
       setKpi('kpiFixedSub', `折舊 ${fmtDec(dep)} 億元 ＋ 利息 ${fmtDec(intr)} 億元（佔總成本 ${fmtDec((dep + intr) / total * 100, 1)}%）`);
 
-      setKpi('kpiCarbon', `${FIN.carbon_fee_budget['115']} → ${FIN.carbon_fee_budget['116']} 億`);
-      setKpi('kpiCarbonSub', `113 年火力排放 ${fmtDec(FIN.ghg['113'], 0)} 萬噸 CO₂e；碳費預算 115 年 ${FIN.carbon_fee_budget['115']} 億、116 年 ${FIN.carbon_fee_budget['116']} 億（計費基礎詳決算書）`);
+      // 碳費：預算書只揭露「金額 + 費率」，收費排放量由兩者反推
+      // （收費排放量 = 年排放量 − 2.5 萬噸，再扣除提供電力消費之排放量，見碳費收費辦法 §5、§8）
+      const cf = FIN.carbon_fee_budget, cr = FIN.carbon_rate;
+      const trim2 = (v) => String(+(+v).toFixed(2));
+      const chargeQty = (y) => cf[y] * 1e8 / cr[y] / 1e4;      // 萬噸
+      const q115 = chargeQty('115'), q116 = chargeQty('116');
+      const totalCut = (cf['116'] / cf['115'] - 1) * 100;
+      const rateCut = (cr['116'] / cr['115'] - 1) * 100;
+      const qtyCut = (q116 / q115 - 1) * 100;
+      setKpi('kpiCarbon', `${trim2(cf['115'])} → ${trim2(cf['116'])} 億`);
+      setKpi('kpiCarbonSub', `費率 ${cr['115']} → ${cr['116']} 元/噸；反推收費排放量 ${fmtDec(q115, 1)} → ${fmtDec(q116, 1)} 萬噸（114 年火力排放 ${fmtDec(FIN.ghg['114'], 0)} 萬噸）`);
+      setKpi('carbonNote',
+        `<strong>碳費 ≠ 火力排放 × 費率：</strong>依《碳費收費辦法》第 5 條，碳費 ＝ 收費排放量 × 費率，
+         收費排放量 ＝（年排放量 − 2.5 萬噸）× 係數；第 8 條並允許生產電力事業扣除「提供電力消費之排放量」
+         （躉售公用售電業或逕行供應特定用戶之電量及其排碳強度），故台電實際被課徵的量遠低於全公司排放。<br />
+         <strong>以預算數反推：</strong>115 年 ${trim2(cf['115'])} 億 ÷ ${cr['115']} 元/噸 ≈ ${fmtDec(q115, 1)} 萬噸
+         （約 113 年火力排放 ${fmtDec(FIN.ghg['113'], 0)} 萬噸的 ${fmtDec(q115 / FIN.ghg['113'] * 100)}%）；
+         116 年 ${trim2(cf['116'])} 億 ÷ ${cr['116']} 元/噸 ≈ ${fmtDec(q116, 1)} 萬噸
+         （約 114 年 ${fmtDec(FIN.ghg['114'], 0)} 萬噸的 ${fmtDec(q116 / FIN.ghg['114'] * 100)}%）。<br />
+         <strong>116 年減幅 ${fmtDec(Math.abs(totalCut), 1)}% 的組成：</strong>費率由一般費率 ${cr['115']} 元改採優惠費率
+         ${cr['116']} 元（${signPct(rateCut)}）為主因，收費排放量減少 ${fmtDec(Math.abs(qtyCut), 1)}% 為次因；
+         ${trim2(cf['115'])} × ${fmtDec(q116 / q115 * 100, 1)}% × ${fmtDec(cr['116'] / cr['115'] * 100, 1)}% ＝ ${trim2(cf['116'])} 億。
+         <em>（預算書未揭露收費排放量，以上為反推值；來源：115／116 年院核預算書「溫室氣體排放」與「碳費預算編列情形」）</em>`);
     }
 
     // ── 電價表：由 TARIFF 產生（HTML 內的靜態列為無 JS 備援）──
