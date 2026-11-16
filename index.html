@@ -593,6 +593,7 @@
                 <th scope="col">性質</th>
                 <th scope="col">平均售電單價 (元/度)</th>
                 <th scope="col">單位成本 (元/度)<sup>※1</sup></th>
+                <th scope="col">同口徑單位成本<sup>※3</sup></th>
                 <th scope="col">每度售電總成本 (元/度)</th>
                 <th scope="col">售電量 (億度)<sup>※2</sup></th>
                 <th scope="col" style="text-align:left;">電價調整重點</th>
@@ -618,6 +619,10 @@
         <strong>※2 已覆核：</strong>決算書「乙貳一」明載 114 年售電量 239,057 百萬度、113 年 239,067 百萬度
         （兩者僅差 0.1 億度係屬實），其中電燈 71,411、電力 167,646 百萬度；電費收入 932,799 百萬元 ÷
         239,057 百萬度 ＝ 3.9020 元/度，與本表「平均售電單價」相符。
+        <br />
+        <span id="unitCostNote3"><strong>※3 同口徑單位成本：</strong>112 年起把轉、直供電量計入供電量，
+        本欄以「銷售成本 ÷（供電量 − 轉直供）」還原成 110–111 的基礎；115–116 為預算書「單位生產成本」，
+        定義不同不列入。載入後由程式重算。</span>
       </p>
     </section>
 
@@ -896,12 +901,20 @@
     };
 
     // ── 單位成本口徑（決算書「5年來主要產品單位成本比較表」＝ 銷售成本 ÷ 供電量）──
-    // 110/111/112 取自 110、111、112 年度審定決算書的損益表與乙貳一（億、億度）；
-    // 112 起決算書把轉、直供電量計入供電量，分母變大，跨 112 前後不可直接比較。
+    // 每筆取「該年度決算書」的損益表（銷售成本）與乙貳一（供電量、轉直供），單位為億、億度。
+    // 110/111 年的供電量原本就不含轉直供；112 年起決算書改為含轉直供，故 direct 只在 112+ 有值。
+    // 同口徑（剔除轉直供）= 銷售成本 ÷（供電量 − 轉直供），才與 110/111 可比。
     const UNIT_COST = {
-      '110': { salesCost: 5578.4054, supply: 2448.3398, unit: 2.2784 },
-      '111': { salesCost: 9051.6355, supply: 2470.7703, unit: 3.6635 },
-      '112': { salesCost: 9403.4508, supply: 2434.5991, unit: 3.8624 }
+      '110': { salesCost: 5578.4054, supply: 2448.3399, direct: 0,       unit: 2.2784, book: '110 年度審定決算書' },
+      '111': { salesCost: 9051.6355, supply: 2470.7703, direct: 0,       unit: 3.6635, book: '111 年度審定決算書' },
+      '112': { salesCost: 9403.4508, supply: 2434.5991, direct: 17.3318, unit: 3.8624, book: '112 年度審定決算書' },
+      '113': { salesCost: 8540.4032, supply: 2503.7790, direct: 29.9887, unit: 3.4110, book: '113 年度審定決算書' },
+      '114': { salesCost: 8404.8292, supply: 2537.1438, direct: 59.6921, unit: 3.3127, book: '114 年度審定決算書' }
+    };
+    // 同口徑單位成本（110–114 決算年）；115–116 的「單位成本」是預算書的單位生產成本，定義不同，不納入。
+    const sameBasisUnit = (y) => {
+      const d = UNIT_COST[String(y)];
+      return d ? d.salesCost / (d.supply - d.direct) : null;
     };
 
     const fmtInt = (v) => v == null ? '未揭露' : Math.round(v).toLocaleString('zh-TW');
@@ -1489,6 +1502,7 @@
             <td><span class="pill pill-${x.pill}">${pillText[x.pill]}</span></td>
             <td class="num">${x.year === 114 ? '<strong>' : ''}${fmtDec(x.price, 4)}${x.year === 114 ? '</strong>' : ''}</td>
             <td class="num">${fmtDec(x.unitCost, 4)}</td>
+            <td class="num">${sameBasisUnit(x.year) == null ? '—' : fmtDec(sameBasisUnit(x.year), 4)}</td>
             <td class="num">${x.totalCost == null ? '—' : fmtDec(x.totalCost, 4)}</td>
             <td class="num">${x.sales == null ? '—' : fmtDec(x.sales)}</td>
             <td style="text-align:left;font-size:0.78rem;">${x.note || ''}</td>
@@ -1520,7 +1534,7 @@
       if (!el) return;
       const a = UNIT_COST['110'], b = UNIT_COST['111'];
       // 自我檢查：表列單位成本應等於 銷售成本 ÷ 供電量
-      ['110', '111', '112'].forEach((y) => {
+      ['110', '111', '112', '113', '114'].forEach((y) => {
         const d = UNIT_COST[y];
         const calc = d.salesCost / d.supply;
         if (Math.abs(calc - d.unit) > 0.0005) console.warn('[unitCost]', y, '複算', calc.toFixed(5), 'vs 表列', d.unit);
@@ -1546,6 +1560,24 @@
          <strong>口徑變動發生在 112 年：</strong>決算書自 112 年度起把轉、直供電量計入供電量（分母變大、單位成本偏低）。
          以 114 年試算，剔除轉直供 ${fmtDec(direct114)} 億度後單位成本約
          <strong>${fmtDec(unit114adj)}</strong> 元/度（表列 3.3127），跨 112 年前後比較須留意此 ${fmtDec(direct114 / saleSup114 * 100, 1)}% 的落差。`;
+
+      // ※3：同口徑序列（111→112→113→114）
+      const el3 = document.getElementById('unitCostNote3');
+      if (el3) {
+        const u = (y) => sameBasisUnit(y);
+        const published = (y) => UNIT_COST[String(y)].unit;
+        el3.innerHTML =
+          `<strong>※3 同口徑單位成本（剔除轉、直供電量，回復 110–111 的基礎）：</strong>
+           112 年 <strong>${fmtDec(u(112), 4)}</strong>（表列 ${fmtDec(published(112), 4)}）→
+           113 年 <strong>${fmtDec(u(113), 4)}</strong>（${fmtDec(published(113), 4)}）→
+           114 年 <strong>${fmtDec(u(114), 4)}</strong>（${fmtDec(published(114), 4)}），
+           修正幅度 ${fmtDec((u(112) / published(112) - 1) * 100, 2)}%～${fmtDec((u(114) / published(114) - 1) * 100, 2)}%
+           （轉直供占供電量比重由 ${fmtDec(UNIT_COST['112'].direct / UNIT_COST['112'].supply * 100)}% 升至
+           ${fmtDec(UNIT_COST['114'].direct / UNIT_COST['114'].supply * 100)}%）。<br />
+           同口徑下的年度變化：111→112 ${signPct((u(112) / u(111) - 1) * 100)}、112→113 ${signPct((u(113) / u(112) - 1) * 100)}、
+           113→114 ${signPct((u(114) / u(113) - 1) * 100)}；115–116 為預算書「單位生產成本」，定義不同，不列入本欄。
+           <em>（各年數字取該年度決算書；決算書對前年度的供電量有重編，故一律採當年度版本）</em>`;
+      }
     }
 
     function renderTariffChart() {
@@ -1576,6 +1608,19 @@
               tension: 0.2,
               borderWidth: 2.5,
               segment: { borderDash: (c) => c.p1DataIndex >= forecastFrom ? [5, 5] : undefined }
+            },
+            {
+              // 同口徑：把 112 年起計入供電量的轉、直供電量剔除，才與 110–111 可比
+              label: '單位成本（同口徑，剔除轉直供）',
+              data: TARIFF.map(x => sameBasisUnit(x.year)),
+              borderColor: '#94a3b8',
+              backgroundColor: 'rgba(148,163,184,0.12)',
+              borderDash: [5, 4],
+              pointRadius: 3,
+              pointBackgroundColor: '#94a3b8',
+              tension: 0.2,
+              borderWidth: 2,
+              spanGaps: false
             }
           ]
         },
