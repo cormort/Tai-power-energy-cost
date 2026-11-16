@@ -444,6 +444,64 @@
       </div>
     </section>
 
+    <!-- Electricity Tariff & Unit Cost Section -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">電價與每度發供電成本比較（民國 110–116 年）</h2>
+          <p class="card-desc">彙整審定決算《成本與售價比較表》、《5年來主要產品單位成本比較表》及 115–116 年院核預算書</p>
+        </div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:1.1rem;">
+        <div class="kpi-card" style="border-top-color:#0284c7;">
+          <div class="kpi-label"><span>114 審定決算・平均電價</span><span class="pill pill-audit">實績</span></div>
+          <div class="kpi-value num">3.9020 元/度</div>
+          <div class="kpi-sub">較 113 年 3.4827 元/度 <span class="delta-up">+12.04%</span>；售電量 2,390.57 億度</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#059669;">
+          <div class="kpi-label"><span>114 審定決算・每度售電盈虧</span><span class="pill pill-audit">轉虧為盈</span></div>
+          <div class="kpi-value num" style="color:var(--success);">+0.1864 元/度</div>
+          <div class="kpi-sub">每度總成本 3.7156 元（銷售成本 3.5158 元），銷售盈餘 445.62 億元</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#d97706;">
+          <div class="kpi-label"><span>115 院核預算・平均電價</span><span class="pill pill-budget">預算</span></div>
+          <div class="kpi-value num">3.8741 元/度</div>
+          <div class="kpi-sub">電燈 3.0708 元/度 ｜ 電力 4.2033 元/度；單位生產成本 3.5926 元/度</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#d97706;">
+          <div class="kpi-label"><span>116 院核預算・平均電價</span><span class="pill pill-budget">現行電價表</span></div>
+          <div class="kpi-value num">3.8946 元/度</div>
+          <div class="kpi-sub">依 114/10/1 現行電價表預估；單位生產成本降至 3.4196 元/度</div>
+        </div>
+      </div>
+      <div class="grid-2" style="align-items:center;">
+        <div class="chart-box" style="height:280px;"><canvas id="tariffChart"></canvas></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>年度</th>
+                <th>性質</th>
+                <th>平均售電單價 (元/度)</th>
+                <th>單位供電/生產成本 (元/度)</th>
+                <th>每度售電總成本 (元/度)</th>
+                <th>售電量 (億度)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>110</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">2.2784</td><td class="num">—</td><td class="num">—</td></tr>
+              <tr><td><strong>111</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">3.6635</td><td class="num">—</td><td class="num">—</td></tr>
+              <tr><td><strong>112</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">—</td><td class="num">3.8624</td><td class="num">—</td><td class="num">—</td></tr>
+              <tr><td><strong>113</strong></td><td><span class="pill pill-actual">審定決算</span></td><td class="num">3.4827</td><td class="num">3.4110</td><td class="num">—</td><td class="num">2,390.67</td></tr>
+              <tr class="row-audit"><td><strong>114</strong></td><td><span class="pill pill-audit">審定決算</span></td><td class="num"><strong>3.9020</strong></td><td class="num">3.3127</td><td class="num">3.7156</td><td class="num">2,390.57</td></tr>
+              <tr class="row-budget"><td><strong>115</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8741</td><td class="num">3.5926</td><td class="num">—</td><td class="num">2,459.64</td></tr>
+              <tr class="row-budget"><td><strong>116</strong></td><td><span class="pill pill-budget">院核預算</span></td><td class="num">3.8946</td><td class="num">3.4196</td><td class="num">—</td><td class="num">2,456.64</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- Interactive Sensitivity Simulator -->
     <section class="card">
       <div class="card-header">
@@ -927,10 +985,50 @@
       a.click();
     });
 
+    function renderTariffChart() {
+      const ctx = document.getElementById('tariffChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['110', '111', '112', '113', '114', '115(預)', '116(預)'],
+          datasets: [
+            {
+              label: '平均售電單價 (元/度)',
+              data: [null, null, null, 3.4827, 3.9020, 3.8741, 3.8946],
+              borderColor: '#059669',
+              backgroundColor: 'rgba(5,150,105,0.1)',
+              tension: 0.2,
+              borderWidth: 2.5,
+              segment: { borderDash: (c) => c.p1DataIndex >= 5 ? [5, 5] : undefined }
+            },
+            {
+              label: '單位供電/生產成本 (元/度)',
+              data: [2.2784, 3.6635, 3.8624, 3.4110, 3.3127, 3.5926, 3.4196],
+              borderColor: '#dc2626',
+              backgroundColor: 'rgba(220,38,38,0.1)',
+              tension: 0.2,
+              borderWidth: 2.5,
+              segment: { borderDash: (c) => c.p1DataIndex >= 5 ? [5, 5] : undefined }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            y: { title: { display: true, text: '新台幣元 / 度' }, suggestedMin: 2.0, suggestedMax: 4.2 }
+          }
+        }
+      });
+    }
+
     renderPriceChart();
     renderQtyChart();
     renderCostStackChart();
     renderOpCostChart();
+    renderTariffChart();
     updateSim();
     renderTable();
   </script>
