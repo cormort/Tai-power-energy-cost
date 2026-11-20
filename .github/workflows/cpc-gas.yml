@@ -1,4 +1,4 @@
-name: 更新中油天然氣牌價與台電用氣量
+name: 更新中油天然氣牌價與台電燃料用量
 
 on:
   schedule:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 scripts/fetch_cpc_gas.py
         continue-on-error: true
-      - run: python3 scripts/fetch_taipower_gas.py
+      - run: python3 scripts/fetch_taipower_fuel.py
         continue-on-error: true
       - name: Commit if changed
         run: |
@@ -24,5 +24,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "data: 更新中油牌價／台電用氣量 $(date -u +%Y-%m-%d)"
+          git commit -m "data: 更新中油牌價／台電燃料用量 $(date -u +%Y-%m-%d)"
           git push
