@@ -880,6 +880,26 @@
         <div class="chart-box"><canvas id="coalUsageChart" role="img" aria-label="台電逐月燃煤用量，近三年逐月比較"></canvas></div>
       </div>
     </section>
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">台電逐月燃料油用量</h2>
+            <p class="card-desc">能源署「發電燃料耗用」台電燃料油耗用量（萬公秉，非採購量），每日自動更新</p>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="fuelOilUsageChart" role="img" aria-label="台電逐月燃料油用量，近三年逐月比較"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">台電逐月柴油用量</h2>
+            <p class="card-desc">能源署「發電燃料耗用」台電柴油耗用量（千公秉，非採購量），每日自動更新</p>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="dieselUsageChart" role="img" aria-label="台電逐月柴油用量，近三年逐月比較"></canvas></div>
+      </div>
+    </section>
 
     <!-- Section: Coal Procurement Performance & Generation Mix -->
     <section class="grid-2">
@@ -1454,7 +1474,7 @@
       overview: ['priceChart', 'qtyChart', 'costStackChart', 'opCostChart'],
       tariff: ['tariffChart'],
       sim: [],
-      power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'coalBenchChart', 'genMixChart'],
+      power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart'],
       finance: [],
       detail: []
     };
@@ -1469,6 +1489,8 @@
       cpcHistoryChart: renderCpcChart,
       gasUsageChart: () => renderUsageChart('gasUsageChart', TP_GAS, 1e5, '億 m³'),
       coalUsageChart: () => renderUsageChart('coalUsageChart', TP_COAL, 1e4, '萬公噸'),
+      fuelOilUsageChart: () => renderUsageChart('fuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
+      dieselUsageChart: () => renderUsageChart('dieselUsageChart', TP_DIESEL, 1e3, '千公秉'),
       coalBenchChart: renderCoalBenchChart,
       genMixChart: renderGenMixChart
     };
@@ -1942,15 +1964,17 @@
     }
 
     // data/cpc_gas.json 由 GitHub Actions 每月 1 日抓中油牌價寫入；抓不到時沿用內嵌資料
-    let CPC_LIVE = [], TP_GAS = [], TP_COAL = [];
+    let CPC_LIVE = [], TP_GAS = [], TP_COAL = [], TP_FUEL_OIL = [], TP_DIESEL = [];
     const getJson = (u) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []);
-    Promise.all([getJson('data/cpc_gas.json'), getJson('data/taipower_gas_monthly.json'), getJson('data/taipower_coal_monthly.json')])
-      .then(([rows, usage, coal]) => {
+    Promise.all(['cpc_gas', 'taipower_gas_monthly', 'taipower_coal_monthly', 'taipower_fuel_oil_monthly', 'taipower_diesel_monthly']
+      .map(f => getJson(`data/${f}.json`)))
+      .then(([rows, usage, coal, oil, diesel]) => {
         CPC_LIVE = rows;
         TP_GAS = usage;
         TP_COAL = coal;
-        renderChartIfVisible('gasUsageChart');
-        renderChartIfVisible('coalUsageChart');
+        TP_FUEL_OIL = oil;
+        TP_DIESEL = diesel;
+        ['gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart'].forEach(renderChartIfVisible);
         const last = rows[rows.length - 1];
         const el = document.getElementById('cpcLiveNote');
         if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³`;

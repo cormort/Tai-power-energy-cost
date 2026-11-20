@@ -1,6 +1,7 @@
 """抓能源署「發電燃料耗用」台電逐月用量，寫入 data/：
 - taipower_gas_monthly.json：進口液化天然氣（千立方公尺）
 - taipower_coal_monthly.json：煙煤-燃料煤 + 亞煙煤（公噸）
+- taipower_fuel_oil_monthly.json / taipower_diesel_monthly.json：燃料油／柴油（公秉）
 """
 import json
 import sys
@@ -13,6 +14,8 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 SERIES = {
     "taipower_gas_monthly.json": ("3100", ["台電-進口液化天然氣"], "千立方公尺"),
     "taipower_coal_monthly.json": ("1a20,1a40", ["台電-煙煤-燃料煤", "台電-亞煙煤"], "公噸"),
+    "taipower_fuel_oil_monthly.json": ("2110", ["台電-燃料油"], "公秉"),
+    "taipower_diesel_monthly.json": ("2100", ["台電-柴油"], "公秉"),
 }
 
 
