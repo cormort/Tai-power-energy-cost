@@ -506,6 +506,7 @@
         <a class="badge live" href="https://www.taipower.com.tw/media/ekchpngi/114%E5%B9%B4%E5%BA%A6%E5%AF%A9%E5%AE%9A%E6%B1%BA%E7%AE%97%E6%9B%B8.zip?mediaDL=true" target="_blank" rel="noopener" style="text-decoration:none;">最新決算：114 年度審定決算書 ↗</a>
         <a class="badge budget" href="https://www.taipower.com.tw/media/svqfhch5/116%E5%B9%B4%E9%99%A2%E6%A0%B8%E9%A0%90%E7%AE%97%E6%9B%B8.pdf?mediaDL=true" target="_blank" rel="noopener" style="text-decoration:none;">最新預算：115–116 年度院核預算書 ↗</a>
         <a class="badge" href="https://www.taipower.com.tw/2289/2406/2437/48200/simpleList" target="_blank" rel="noopener" style="text-decoration:none;">資料來源：台灣電力公司 預、決算書表 ↗</a>
+        <span class="badge" id="dataFreshBadge" style="cursor:default;">資料更新：讀取中…</span>
       </div>
     </div>
   </header>
@@ -2115,6 +2116,25 @@
       if (msg) n.insertAdjacentHTML('beforeend', `<br /><span style="font-size:0.85rem;">${msg}</span>`);
     };
 
+    // 資料新鮮度：一眼看出各來源最新到哪個月（避免把月報資料當成即時資料）
+    function updateFreshBadge() {
+      const el = document.getElementById('dataFreshBadge');
+      if (!el) return;
+      const lastD = (arr) => (arr && arr.length ? arr[arr.length - 1].d : null);
+      const cpc = lastD(CPC_LIVE);
+      const coal = lastD(COAL_PRICE);
+      const gasQ = lastD(TP_GAS);
+      const acc = TP_ACC && TP_ACC.latest ? `${+TP_ACC.latest.slice(0, 3)}/${TP_ACC.latest.slice(3)}` : null;
+      const parts = [];
+      if (cpc) parts.push(`中油氣價 ${cpc}`);
+      if (coal) parts.push(`能源署煤油價 ${coal}`);
+      if (gasQ) parts.push(`燃料用量 ${gasQ}`);
+      if (acc) parts.push(`台電月報 ${acc}`);
+      if (!parts.length) return;
+      el.textContent = `資料更新：${parts.join('・')}`;
+      el.title = '各來源最新資料月份；能源署月報約落後 2 個月，中油牌價每月 1 日更新';
+    }
+
     Promise.all(['cpc_gas', 'taipower_gas_monthly', 'taipower_coal_monthly', 'taipower_fuel_oil_monthly', 'taipower_diesel_monthly',
       'import_coal_price', 'fuel_oil_price', 'diesel_price'].map(f => getJson(`data/${f}.json`)))
       .then((res) => {
@@ -2138,6 +2158,7 @@
         if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³`;
         renderChartIfVisible('cpcHistoryChart');
         renderCpcImpact();
+        updateFreshBadge();
       })
       .catch(() => { document.getElementById('cpcImpact').textContent = '無法讀取中油牌價資料。'; dataNotice('中油牌價資料讀取失敗。'); });
 
@@ -2224,6 +2245,7 @@
       const el = document.getElementById('finBody');
       if (!acc) { el.textContent = document.getElementById('ovFinKpis').textContent = '無法讀取會計月報資料。'; dataNotice('台電會計月報讀取失敗。'); return; }
       TP_ACC = acc;
+      updateFreshBadge();
       const roc = acc.latest.slice(0, 3), mm = +acc.latest.slice(3);
       const row = (code) => acc.is.find(r => r.code === code);
       const pretax = row('64'), thermal = row('510108');

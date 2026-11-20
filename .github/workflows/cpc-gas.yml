@@ -14,19 +14,85 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 scripts/fetch_cpc_gas.py
-        continue-on-error: true
-      - run: python3 scripts/fetch_taipower_fuel.py
-        continue-on-error: true
-      - run: python3 scripts/fetch_energy_prices.py
-        continue-on-error: true
-      - run: python3 scripts/fetch_taipower_accounts.py
-        continue-on-error: true
+
+      # 單一腳本失敗不讓整條管線停掉，但要在 run 頁面留下 ::warning::
+      - name: 抓取各項資料
+        run: |
+          fail=0
+          for s in fetch_cpc_gas fetch_taipower_fuel fetch_energy_prices fetch_taipower_accounts; do
+            echo "===== $s"
+            if ! python3 "scripts/$s.py"; then
+              echo "::warning::scripts/$s.py 執行失敗"
+              fail=$((fail+1))
+            fi
+          done
+          echo "失敗腳本數：$fail"
+          echo "失敗腳本數：$fail" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit if changed
         run: |
-          git diff --quiet data/ && exit 0
+          if git diff --quiet data/; then
+            echo "資料無變動"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add data/
           git commit -m "data: 更新中油牌價／台電燃料用量 $(date -u +%Y-%m-%d)"
           git push
+
+      # 最大的風險是資料悄悄停住沒人發現（腳本壞掉時 job 照樣綠燈、不 commit）。
+      # 這裡每天檢查「最新月份離現在幾個月」，超過容忍值就讓 job 失敗，GitHub 會通知 repo owner。
+      - name: 資料新鮮度檢查
+        run: |
+          python3 - <<'PY'
+          import datetime, json, pathlib, sys
+
+          today = datetime.date.today()
+
+          def behind_months(ym):
+              s = str(ym).replace("-", "")
+              if len(s) == 5:            # 民國年月，例：11510
+                  y, m = int(s[:3]) + 1911, int(s[3:])
+              else:                      # 西元年月，例：2026-09 → 202609
+                  y, m = int(s[:4]), int(s[4:6])
+              return (today.year - y) * 12 + (today.month - m)
+
+          checks = [
+              ("cpc_gas.json", "中油氣價（每月 1 日更新）", 1),
+              ("import_coal_price.json", "能源署煤價（月報本就不定時、約落後 2 個月）", 3),
+              ("fuel_oil_price.json", "能源署油價（同上）", 3),
+              ("taipower_gas_monthly.json", "台電用氣量（能源署月報）", 3),
+              ("taipower_coal_monthly.json", "台電用煤量（能源署月報）", 3),
+          ]
+
+          problems = []
+          for name, desc, tol in checks:
+              p = pathlib.Path("data") / name
+              try:
+                  rows = json.loads(p.read_text())
+                  last = rows[-1].get("d") if rows else None
+                  if not last:
+                      raise ValueError("沒有資料列")
+                  b = behind_months(last)
+                  print(f"{'OK  ' if b <= tol else 'STALE'} {desc}: {last}（落後 {b} 個月，容忍 {tol}）")
+                  if b > tol:
+                      problems.append(f"{desc} 停在 {last}（落後 {b} 個月）")
+              except Exception as e:
+                  problems.append(f"{desc}: 讀取失敗（{e}）")
+
+          p = pathlib.Path("data/taipower_accounts.json")
+          try:
+              latest = json.loads(p.read_text()).get("latest", "")
+              b = behind_months(latest)
+              print(f"{'OK  ' if b <= 2 else 'STALE'} 台電會計月報: {latest}（落後 {b} 個月，容忍 2）")
+              if b > 2:
+                  problems.append(f"台電會計月報停在 {latest}（落後 {b} 個月）")
+          except Exception as e:
+              problems.append(f"台電會計月報: 讀取失敗（{e}）")
+
+          if problems:
+              print("::error::資料新鮮度檢查未通過：" + "；".join(problems))
+              sys.exit(1)
+          print("資料新鮮度檢查通過")
+          PY
