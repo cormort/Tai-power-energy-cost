@@ -842,14 +842,13 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">中油公司發電用天然氣牌價長期走勢</h2>
-            <p class="card-desc">整合既有 Excel 2009–2022 月牌價及預算書揭露 114/8 (12.77) 與 115/8 (20.44)</p>
+            <p class="card-desc">中油天然氣歷史價格「電業用戶」欄，2009 年起逐月（每月 1 日自動更新）</p>
           </div>
         </div>
-        <div class="chart-box"><canvas id="cpcHistoryChart" role="img" aria-label="中油發電用天然氣月牌價走勢圖，2009 至 2026 年，中間有資料缺口"></canvas></div>
+        <div class="chart-box"><canvas id="cpcHistoryChart" role="img" aria-label="中油發電用天然氣月牌價走勢圖，2009 年至今"></canvas></div>
         <p class="chart-note">
-          <strong>資料缺口（請勿讀成趨勢）：</strong>2022-05 至 2025-07 共 <strong>39 個月</strong>、
-          2025-09 至 2026-07 共 <strong>11 個月</strong>無公開月資料，圖上以灰色區塊標示並斷線，<strong>不以直線補值</strong>。
-          陰影區間內的走勢屬推定，僅 2022-04、2025-08（12.77）、2026-08（20.44）為實有觀測點。
+          資料來源：<a href="https://www.cpc.com.tw/cp.aspx?n=57" target="_blank" rel="noopener">中油天然氣歷史價格</a>；早年分冬／夏／其他月計價者取「其他月」。
+          預算書揭露之 114/8（12.77）、115/8（20.44）為本牌價 ÷ 1.05，即未含 5% 營業稅。
           <br><span id="cpcLiveNote"></span>
         </p>
       </div>
@@ -1921,7 +1920,7 @@
         CPC_LIVE = rows;
         const last = rows[rows.length - 1];
         const el = document.getElementById('cpcLiveNote');
-        if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³（自 2026-11 起每月自動抓取中油牌價表）`;
+        if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³`;
         renderChartIfVisible('cpcHistoryChart');
         renderCpcImpact();
       })
@@ -1938,7 +1937,9 @@
       if (!b) { el.textContent = `${roc} 年預算統約單價尚未建檔，無法設算。`; return; }
       // ponytail: 月用量依 114 年統約逐月分布攤算，有 115/116 逐月預算再替換
       const tot114 = EXTRA.gas_114_monthly.reduce((s, x) => s + x.t_q, 0);
-      const diff = last.p - b.p;
+      // 預算單價為未稅（預算書 114/8、115/8 恰為牌價 ÷ 1.05），牌價須先扣 5% 營業稅再比較
+      const net = last.p / 1.05;
+      const diff = net - b.p;
       const sign = (v) => (v >= 0 ? '+' : '');
       let sumQ = 0, sumImp = 0, rows = '';
       for (let m = m0; m <= 12; m++) {
@@ -1949,8 +1950,9 @@
       }
       el.innerHTML = `
         <div class="sim-total"><span style="font-weight:700;color:var(--navy);">${roc} 年 ${m0}–12 月損益影響</span><span class="val num">${sign(sumImp)}${sumImp.toFixed(2)} 億元</span></div>
-        <div class="sim-item"><span>中油最新牌價（${last.eff} 實施）</span><strong class="num">${last.p.toFixed(4)} 元/m³</strong></div>
-        <div class="sim-item"><span>${roc} 年預算統約單價</span><span class="num">${b.p.toFixed(4)} 元/m³</span></div>
+        <div class="sim-item"><span>中油最新牌價（${last.eff} 實施）</span><span class="num">${last.p.toFixed(4)} 元/m³</span></div>
+        <div class="sim-item"><span>　扣除 5% 營業稅</span><strong class="num">${net.toFixed(4)} 元/m³</strong></div>
+        <div class="sim-item"><span>${roc} 年預算統約單價（未稅）</span><span class="num">${b.p.toFixed(4)} 元/m³</span></div>
         <div class="sim-item"><span>價差</span><strong class="num">${sign(diff)}${diff.toFixed(4)} 元/m³（${sign(diff)}${(diff / b.p * 100).toFixed(1)}%）</strong></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:0.6rem 0;" />
         ${rows}
@@ -1990,9 +1992,9 @@
             borderColor: '#0284c7',
             backgroundColor: 'rgba(2,132,199,0.08)',
             fill: true,
-            // 不以直線跨接缺口：2022-05～2025-07、2025-09～2026-07 無公開月資料
+            // 讀不到 data/cpc_gas.json 時內嵌資料有缺口，不以直線跨接
             spanGaps: false,
-            pointRadius: (c) => (cpcLabels[c.dataIndex] === '2022-04' || isolated(c.dataIndex) ? 4 : 0),
+            pointRadius: (c) => (isolated(c.dataIndex) ? 4 : 0),
             pointBackgroundColor: '#0284c7',
             borderWidth: 2
           }]
