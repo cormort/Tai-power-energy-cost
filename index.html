@@ -1913,11 +1913,12 @@
     }
 
     // data/cpc_gas.json 由 GitHub Actions 每月 1 日抓中油牌價寫入；抓不到時沿用內嵌資料
-    let CPC_LIVE = [];
-    fetch('data/cpc_gas.json', { cache: 'no-cache' })
-      .then(r => r.ok ? r.json() : [])
-      .then((rows) => {
+    let CPC_LIVE = [], TP_GAS = [];
+    const getJson = (u) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []);
+    Promise.all([getJson('data/cpc_gas.json'), getJson('data/taipower_gas_monthly.json')])
+      .then(([rows, usage]) => {
         CPC_LIVE = rows;
+        TP_GAS = usage;
         const last = rows[rows.length - 1];
         const el = document.getElementById('cpcLiveNote');
         if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³`;
@@ -1935,28 +1936,43 @@
       const y = +last.d.slice(0, 4), m0 = +last.d.slice(5), roc = y - 1911;
       const b = GAS_CONTRACT_BUDGET[roc];
       if (!b) { el.textContent = `${roc} 年預算統約單價尚未建檔，無法設算。`; return; }
-      // ponytail: 月用量依 114 年統約逐月分布攤算，有 115/116 逐月預算再替換
-      const tot114 = EXTRA.gas_114_monthly.reduce((s, x) => s + x.t_q, 0);
-      // 預算單價為未稅（預算書 114/8、115/8 恰為牌價 ÷ 1.05），牌價須先扣 5% 營業稅再比較
-      const net = last.p / 1.05;
-      const diff = net - b.p;
+      const ym = (yy, m) => `${yy}-${String(m).padStart(2, '0')}`;
+      const price = Object.fromEntries(CPC_LIVE.map(x => [x.d, x.p]));
+      const used = Object.fromEntries(TP_GAS.map(x => [x.d, x.q * 1000]));
+      // 統約占台電總用氣比例（大潭合約另計價，不隨牌價變動）
+      const share = b.q / DATA.gas.find(x => x.year === roc).qty;
+      // 尚無實績月份：去年同月 × 今年累計成長率
+      let ytd = 0, ytdPrev = 0;
+      for (let m = 1; m <= 12; m++) {
+        if (used[ym(y, m)] != null && used[ym(y - 1, m)] != null) { ytd += used[ym(y, m)]; ytdPrev += used[ym(y - 1, m)]; }
+      }
+      const growth = ytdPrev ? ytd / ytdPrev : 1;
       const sign = (v) => (v >= 0 ? '+' : '');
-      let sumQ = 0, sumImp = 0, rows = '';
-      for (let m = m0; m <= 12; m++) {
-        const q = b.q * EXTRA.gas_114_monthly[m - 1].t_q / tot114;
-        const imp = diff * q / 1e8;
-        sumQ += q; sumImp += imp;
-        rows += `<div class="sim-item"><span>${roc} 年 ${m} 月（用氣 ${(q / 1e8).toFixed(2)} 億m³）</span><span class="num">${sign(imp)}${imp.toFixed(2)} 億元</span></div>`;
+      let rows = '', done = 0, rest = 0, lastActual = null;
+      for (let m = 1; m <= 12; m++) {
+        const actual = used[ym(y, m)] != null;
+        if (actual) lastActual = m;
+        const q = actual ? used[ym(y, m)] : (used[ym(y - 1, m)] ?? 0) * growth;
+        // 預算單價為未稅（預算書 114/8、115/8 恰為牌價 ÷ 1.05），牌價須先扣 5% 營業稅再比較
+        const net = (price[ym(y, m)] ?? last.p) / 1.05;
+        const imp = (net - b.p) * q * share / 1e8;
+        if (m < m0) done += imp; else rest += imp;
+        const est = (s) => `<span style="color:var(--text-light)">${s}*</span>`;
+        rows += `<tr><td>${m} 月</td><td class="num">${actual ? (q / 1e8).toFixed(2) : est((q / 1e8).toFixed(2))}</td>
+          <td class="num">${price[ym(y, m)] != null ? net.toFixed(3) : est(net.toFixed(3))}</td>
+          <td class="num">${sign(net - b.p)}${(net - b.p).toFixed(3)}</td>
+          <td class="num">${sign(imp)}${imp.toFixed(2)}</td></tr>`;
       }
       el.innerHTML = `
-        <div class="sim-total"><span style="font-weight:700;color:var(--navy);">${roc} 年 ${m0}–12 月損益影響</span><span class="val num">${sign(sumImp)}${sumImp.toFixed(2)} 億元</span></div>
-        <div class="sim-item"><span>中油最新牌價（${last.eff} 實施）</span><span class="num">${last.p.toFixed(4)} 元/m³</span></div>
-        <div class="sim-item"><span>　扣除 5% 營業稅</span><strong class="num">${net.toFixed(4)} 元/m³</strong></div>
+        <div class="sim-total"><span style="font-weight:700;color:var(--navy);">${roc} 年 ${m0}–12 月（剩餘月份）損益影響</span><span class="val num">${sign(rest)}${rest.toFixed(2)} 億元</span></div>
+        ${m0 > 1 ? `<div class="sim-item"><span>1–${m0 - 1} 月已發生</span><span class="num">${sign(done)}${done.toFixed(2)} 億元</span></div>` : ''}
+        <div class="sim-item"><span>全年合計</span><strong class="num">${sign(done + rest)}${(done + rest).toFixed(2)} 億元</strong></div>
+        <div class="sim-item"><span>中油最新牌價（${last.eff} 實施，含稅 → 未稅）</span><span class="num">${last.p.toFixed(4)} → ${(last.p / 1.05).toFixed(4)} 元/m³</span></div>
         <div class="sim-item"><span>${roc} 年預算統約單價（未稅）</span><span class="num">${b.p.toFixed(4)} 元/m³</span></div>
-        <div class="sim-item"><span>價差</span><strong class="num">${sign(diff)}${diff.toFixed(4)} 元/m³（${sign(diff)}${(diff / b.p * 100).toFixed(1)}%）</strong></div>
-        <hr style="border:none;border-top:1px solid var(--border);margin:0.6rem 0;" />
-        ${rows}
-        <p style="font-size:0.76rem;color:var(--text-light);margin:0.75rem 0 0;">※ 假設剩餘月份維持最新牌價；僅計統約購氣 ${(sumQ / 1e8).toFixed(2)} 億m³（依 114 年逐月分布攤算 ${roc} 年預算量），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。每月 1 日牌價更新後自動重算。</p>`;
+        <div class="table-wrap" style="margin-top:0.75rem;"><table>
+          <thead><tr><th>月份</th><th>台電用氣<br>(億m³)</th><th>牌價未稅<br>(元/m³)</th><th>較預算</th><th>影響<br>(億元)</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>
+        <p style="font-size:0.76rem;color:var(--text-light);margin:0.75rem 0 0;">※ 用氣量為能源署「發電燃料耗用」台電進口液化天然氣實績${lastActual ? `（至 ${lastActual} 月）` : ''}；* 為推估：用氣量 = 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，牌價沿用最新。影響僅計統約部分（占 ${(share * 100).toFixed(1)}%，依預算比例），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。資料每日自動更新。</p>`;
     }
 
     function renderCpcChart() {

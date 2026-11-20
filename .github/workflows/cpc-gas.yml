@@ -1,9 +1,9 @@
-name: 更新中油天然氣牌價
+name: 更新中油天然氣牌價與台電用氣量
 
 on:
   schedule:
-    # 台灣時間每月 1–3 日 09:00（UTC 01:00）；重跑同月份只會覆寫，不會重複
-    - cron: "0 1 1-3 * *"
+    # 台灣時間每天 09:00；中油每月 1 日調價、能源署月資料發布日不固定，無變動就不會 commit
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 permissions:
@@ -15,11 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/fetch_cpc_gas.py
+        continue-on-error: true
+      - run: python3 scripts/fetch_taipower_gas.py
+        continue-on-error: true
       - name: Commit if changed
         run: |
-          git diff --quiet data/cpc_gas.json && exit 0
+          git diff --quiet data/ && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add data/cpc_gas.json
-          git commit -m "data: 中油天然氣電業用戶牌價 $(date -u +%Y-%m)"
+          git add data/
+          git commit -m "data: 更新中油牌價／台電用氣量 $(date -u +%Y-%m-%d)"
           git push
