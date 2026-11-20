@@ -752,6 +752,16 @@
       </div>
     </section>
 
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">中油最新牌價對本年度剩餘月份損益影響</h2>
+          <p class="card-desc">以中油公告電業用戶牌價（每月 1 日自動更新）對照當年度預算統約單價，設算剩餘月份購氣成本增減</p>
+        </div>
+      </div>
+      <div id="cpcImpact" style="font-size:0.9rem;">讀取中油牌價中…</div>
+    </section>
+
     </div><!-- /panel sim -->
 
     <div class="panel" data-panel="detail">
@@ -1913,8 +1923,39 @@
         const el = document.getElementById('cpcLiveNote');
         if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³（自 2026-11 起每月自動抓取中油牌價表）`;
         renderChartIfVisible('cpcHistoryChart');
+        renderCpcImpact();
       })
-      .catch(() => {});
+      .catch(() => { document.getElementById('cpcImpact').textContent = '無法讀取中油牌價資料。'; });
+
+    // 預算統約部分（大潭合約另計價，不隨中油牌價變動），數值同 DATA.gas 的 note
+    const GAS_CONTRACT_BUDGET = { 115: { q: 173.02e8, p: 15.7933 }, 116: { q: 174.31e8, p: 13.6893 } };
+    function renderCpcImpact() {
+      const el = document.getElementById('cpcImpact');
+      const last = CPC_LIVE[CPC_LIVE.length - 1];
+      if (!last) return;
+      const y = +last.d.slice(0, 4), m0 = +last.d.slice(5), roc = y - 1911;
+      const b = GAS_CONTRACT_BUDGET[roc];
+      if (!b) { el.textContent = `${roc} 年預算統約單價尚未建檔，無法設算。`; return; }
+      // ponytail: 月用量依 114 年統約逐月分布攤算，有 115/116 逐月預算再替換
+      const tot114 = EXTRA.gas_114_monthly.reduce((s, x) => s + x.t_q, 0);
+      const diff = last.p - b.p;
+      const sign = (v) => (v >= 0 ? '+' : '');
+      let sumQ = 0, sumImp = 0, rows = '';
+      for (let m = m0; m <= 12; m++) {
+        const q = b.q * EXTRA.gas_114_monthly[m - 1].t_q / tot114;
+        const imp = diff * q / 1e8;
+        sumQ += q; sumImp += imp;
+        rows += `<div class="sim-item"><span>${roc} 年 ${m} 月（用氣 ${(q / 1e8).toFixed(2)} 億m³）</span><span class="num">${sign(imp)}${imp.toFixed(2)} 億元</span></div>`;
+      }
+      el.innerHTML = `
+        <div class="sim-total"><span style="font-weight:700;color:var(--navy);">${roc} 年 ${m0}–12 月損益影響</span><span class="val num">${sign(sumImp)}${sumImp.toFixed(2)} 億元</span></div>
+        <div class="sim-item"><span>中油最新牌價（${last.eff} 實施）</span><strong class="num">${last.p.toFixed(4)} 元/m³</strong></div>
+        <div class="sim-item"><span>${roc} 年預算統約單價</span><span class="num">${b.p.toFixed(4)} 元/m³</span></div>
+        <div class="sim-item"><span>價差</span><strong class="num">${sign(diff)}${diff.toFixed(4)} 元/m³（${sign(diff)}${(diff / b.p * 100).toFixed(1)}%）</strong></div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:0.6rem 0;" />
+        ${rows}
+        <p style="font-size:0.76rem;color:var(--text-light);margin:0.75rem 0 0;">※ 假設剩餘月份維持最新牌價；僅計統約購氣 ${(sumQ / 1e8).toFixed(2)} 億m³（依 114 年逐月分布攤算 ${roc} 年預算量），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。每月 1 日牌價更新後自動重算。</p>`;
+    }
 
     function renderCpcChart() {
       resetCanvas('cpcHistoryChart');
