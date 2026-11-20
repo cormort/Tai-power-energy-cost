@@ -552,6 +552,11 @@
         <div class="kpi-value num" id="kpiCoalImpact">--</div>
         <div class="kpi-sub" id="kpiCoalImpactSub">讀取進口煤價中…</div>
       </div>
+      <div class="kpi-card" style="border-top-color:#475569;">
+        <div class="kpi-label"><span id="kpiFinLabel">台電會計月報・累計稅前損益</span><span class="pill pill-actual">每月更新</span></div>
+        <div class="kpi-value num" id="kpiFinPretax">--</div>
+        <div class="kpi-sub" id="kpiFinSub">讀取會計月報中…</div>
+      </div>
     </section>
 
     <!-- Charts Row 1 -->
@@ -2092,7 +2097,7 @@
     var TP_ACC = null; // var：分頁初始渲染可能早於此行執行
     fetch('data/taipower_accounts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then((acc) => {
       const el = document.getElementById('finBody');
-      if (!acc) { el.textContent = '無法讀取會計月報資料。'; return; }
+      if (!acc) { el.textContent = document.getElementById('kpiFinSub').textContent = '無法讀取會計月報資料。'; return; }
       TP_ACC = acc;
       const roc = acc.latest.slice(0, 3), mm = +acc.latest.slice(3);
       const row = (code) => acc.is.find(r => r.code === code);
@@ -2117,6 +2122,10 @@
         <tr style="font-weight:700;"><td>負債比率</td><td class="num">${debtRatio.toFixed(1)}%</td></tr></tbody></table></div>`;
       const last = acc.monthly[acc.monthly.length - 1];
       document.getElementById('finTitle').textContent = `台電會計月報（${roc} 年 1–${mm} 月）`;
+      document.getElementById('kpiFinLabel').textContent = `台電會計月報・${roc} 年 1–${mm} 月累計稅前損益`;
+      document.getElementById('kpiFinPretax').innerHTML = `<span class="${pretax.yA < 0 ? 'delta-up' : 'delta-down'}">${fmt(pretax.yA)} 億元</span>`;
+      document.getElementById('kpiFinSub').innerHTML =
+        `預算 ${fmt(pretax.yB)} 億元，差異 <span class="${diffCls(pretax.yA - pretax.yB)}">${f2(pretax.yA - pretax.yB)}</span>｜${mm} 月單月 ${fmt(last.pretaxA)}（預算 ${fmt(last.pretaxB)}）；火力發電費用超支 <span class="delta-up">${f2(thermal.yA - thermal.yB)}</span> 億。<a href="#view=finance">詳見財務分頁 →</a>`;
       el.innerHTML = `
         <div class="kpi-grid" style="margin-bottom:1rem;">
           <div class="kpi-card" style="border-top-color:var(--danger);">
