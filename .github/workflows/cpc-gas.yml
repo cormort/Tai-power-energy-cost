@@ -19,7 +19,7 @@ jobs:
       - name: 抓取各項資料
         run: |
           fail=0
-          for s in fetch_cpc_gas fetch_taipower_fuel fetch_energy_prices fetch_taipower_accounts; do
+          for s in fetch_cpc_gas fetch_taipower_fuel fetch_energy_prices fetch_taipower_accounts fetch_fx; do
             echo "===== $s"
             if ! python3 "scripts/$s.py"; then
               echo "::warning::scripts/$s.py 執行失敗"
@@ -90,6 +90,19 @@ jobs:
                   problems.append(f"台電會計月報停在 {latest}（落後 {b} 個月）")
           except Exception as e:
               problems.append(f"台電會計月報: 讀取失敗（{e}）")
+
+          p = pathlib.Path("data/usdtwd.json")
+          try:
+              fx = json.loads(p.read_text()).get("monthly") or []
+              last = fx[-1]["d"] if fx else None
+              if not last:
+                  raise ValueError("沒有匯率資料")
+              b = behind_months(last)
+              print(f"{'OK  ' if b <= 3 else 'STALE'} 美元兌台幣匯率: {last}（落後 {b} 個月，容忍 3）")
+              if b > 3:
+                  problems.append(f"匯率停在 {last}（落後 {b} 個月）")
+          except Exception as e:
+              problems.append(f"美元兌台幣匯率: 讀取失敗（{e}）")
 
           if problems:
               print("::error::資料新鮮度檢查未通過：" + "；".join(problems))

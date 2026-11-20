@@ -1044,9 +1044,36 @@
       </div>
     </section>
 
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">進口煤價的匯率效應（101–114 決算）</h2>
+          <p class="card-desc" id="coalFxDesc">煤價以美元計價，實際台幣成本還要乘匯率。114 年台幣煤價 3,149 元/公噸、較 113 年少 1,108 元，換算成本少 239.6 億元，其中國際煤價貢獻 −215.4 億、台幣升值貢獻 −24.2 億。</p>
+        </div>
+      </div>
+      <div class="chart-box" style="height:300px;"><canvas id="chartCoalFx" role="img" aria-label="台幣計價進口煤價與美元兌新台幣年均匯率雙軸圖"></canvas></div>
+      <details class="fold" style="margin-top:0.75rem;">
+        <summary>逐年拆解：價格效果 vs 匯率效果</summary>
+        <div class="table-wrap" style="margin-top:0.5rem;" id="coalFxTable"></div>
+        <p style="font-size:0.85rem;color:var(--text-light);margin:0.75rem 0 0;">※ 台幣煤價＝國際煤價（美元/公噸）× 年均匯率；年變動拆解：價格效果＝(Pₜ−Pₜ₋₁)×FXₜ₋₁、匯率效果＝Pₜ×(FXₜ−FXₜ₋₁)。成本影響＝台幣煤價變動×當年耗用量，僅計原料採購、不含海運費與煤場營運費。匯率為 Yahoo Finance TWD=X 月均值之年平均。</p>
+      </details>
+    </section>
+
     </div><!-- /panel power -->
 
     <div class="panel" data-panel="finance">
+    <!-- Section: 歷年損益趨勢（109–116） -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">歷年稅前損益（109–116 年度）</h2>
+          <p class="card-desc">111–112 年國際燃料暴漲，兩年合計稅前虧 4,248.82 億元；113 年收斂到 −392.25 億、114 年轉正 +760.38 億；但 115 年預算又回到 −280.24 億，116 年預算 +88.98 億。</p>
+        </div>
+      </div>
+      <div class="chart-box" style="height:330px;"><canvas id="chartProfitTrend" role="img" aria-label="台電 109 至 116 年度稅前淨利長條圖，109 至 114 為審定決算、115 至 116 為院核預算"></canvas></div>
+      <p class="chart-note">※ 109–114 為各年度審定決算書「丙一、損益表」本年度欄的稅前淨利（淨損）；115–116 為院核預算數（115 年稅前淨損 28,024 百萬元、116 年稅前淨利 8,898 百萬元）。淺色為預算數。101–108 年度決算書已不在台電官網續存，未納入。</p>
+    </section>
+
     <!-- Section: Carbon Emissions & Financial Pressure -->
     <section class="card">
       <div class="card-header">
@@ -1221,6 +1248,23 @@
       carbon_fee_budget: { '115': 13.1, '116': 3.76667 },   // 億元（115 編 13.1 億；116 編 376,667 千元）
       carbon_rate: { '115': 300, '116': 100 }              // 元/噸 CO2e（115 一般費率、116 優惠費率）
     };
+
+    // ── 歷年稅前淨利（億元）：109–114 取自各年度審定決算書「丙一、損益表」本年度欄；
+    //    115–116 取院核預算書（115 年稅前淨損 28,024 百萬元、116 年稅前淨利 8,898 百萬元）。
+    //    101–108 年度決算書已不在台電官網續存，未納入。
+    const PROFIT_TREND = [
+      { y: 109, v: 223.48, type: '決算' },
+      { y: 110, v: 238.55, type: '決算' },
+      { y: 111, v: -2272.17, type: '決算' },
+      { y: 112, v: -1976.65, type: '決算' },
+      { y: 113, v: -392.25, type: '決算' },
+      { y: 114, v: 760.38, type: '決算' },
+      { y: 115, v: -280.24, type: '預算' },
+      { y: 116, v: 88.98, type: '預算' }
+    ];
+
+    // 匯率（美元兌新台幣）：data/usdtwd.json，Yahoo Finance TWD=X 月線
+    let FX = null;
 
     // ── 電力量流向與線路損失（114 決算書「乙貳一、業務計畫」）單位：千度 ──
     // 線損不是「發購電量 − 供電量」：供電量只扣儲能用電，線損另外要扣公司自用、
@@ -1687,8 +1731,8 @@
       overview: ['ovGasUsageChart', 'ovCoalUsageChart', 'ovFuelOilUsageChart', 'ovDieselUsageChart', 'priceChart', 'qtyChart', 'costStackChart', 'opCostChart'],
       tariff: ['tariffChart'],
       sim: [],
-      power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart'],
-      finance: ['finMonthlyChart'],
+      power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart', 'chartCoalFx'],
+      finance: ['finMonthlyChart', 'chartProfitTrend'],
       solvency: ['chartSovBridge', 'chartSovCum', 'chartSovAssets', 'chartSovDebt'],
       detail: []
     };
@@ -1715,7 +1759,9 @@
       ovFuelOilUsageChart: () => renderUsageChart('ovFuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
       ovDieselUsageChart: () => renderUsageChart('ovDieselUsageChart', TP_DIESEL, 1e3, '千公秉'),
       coalBenchChart: renderCoalBenchChart,
-      genMixChart: renderGenMixChart
+      genMixChart: renderGenMixChart,
+      chartCoalFx: renderCoalFx,
+      chartProfitTrend: renderProfitTrend
     };
 
     // ── Tab 控制層：統一 ARIA、鍵盤（← → Home End）、淡入過渡與 URL hash 狀態 ──
@@ -2389,6 +2435,13 @@
       ['chartSovBridge', 'chartSovCum', 'chartSovAssets', 'chartSovDebt'].forEach(renderChartIfVisible);
     });
 
+    // 匯率（美元兌新台幣）：進口煤價換算台幣與「價格 vs 匯率」拆解用
+    fetch('data/usdtwd.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then((fx) => {
+      FX = fx;
+      renderCoalFx();                              // 說明文字與逐年拆解表
+      renderChartIfVisible('chartCoalFx');         // 圖表（分頁可見時才畫）
+    });
+
     // 把財務分頁的 KPI 卡複製到總覽（去掉 id 避免重複），確保兩處數字一致
     function mirrorKpis(src, destId) {
       const c = src.cloneNode(true);
@@ -2649,6 +2702,152 @@
           }
         }
       });
+    }
+
+    // 歷年稅前損益（109–116）：實績實心、預算淺色
+    function renderProfitTrend() {
+      resetCanvas('chartProfitTrend');
+      const el = document.getElementById('chartProfitTrend');
+      if (!el) return;
+      const labels = PROFIT_TREND.map((x) => `${x.y}${x.type === '預算' ? '預' : ''}`);
+      const vals = PROFIT_TREND.map((x) => x.v);
+      const bg = PROFIT_TREND.map((x) => {
+        const neg = x.v < 0;
+        if (x.type === '預算') return neg ? 'rgba(220,38,38,0.30)' : 'rgba(5,150,105,0.30)';
+        return neg ? 'rgba(220,38,38,0.85)' : 'rgba(5,150,105,0.85)';
+      });
+      const border = PROFIT_TREND.map((x) => (x.type === '預算'
+        ? (x.v < 0 ? 'rgba(220,38,38,0.9)' : 'rgba(5,150,105,0.9)') : 'rgba(0,0,0,0)'));
+      new Chart(el.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: vals, backgroundColor: bg, borderColor: border, borderWidth: 1.5, borderRadius: 3, barPercentage: 0.72
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          layout: { padding: { top: 20 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (c) => `${PROFIT_TREND[c.dataIndex].y} 年（${PROFIT_TREND[c.dataIndex].type}）：${c.parsed.y.toLocaleString('zh-TW', { maximumFractionDigits: 2 })} 億元`
+              }
+            }
+          },
+          scales: {
+            y: { title: { display: true, text: '億元' }, grid: { color: 'rgba(148,163,184,0.25)' }, ticks: { callback: (v) => v.toLocaleString('zh-TW') } },
+            x: { grid: { display: false } }
+          }
+        },
+        plugins: [{
+          id: 'profitLabels',
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = '600 11px system-ui, -apple-system, "Noto Sans TC", sans-serif';
+            ctx.fillStyle = '#334155';
+            ctx.textAlign = 'center';
+            PROFIT_TREND.forEach((x, i) => {
+              const bar = meta.data[i];
+              if (!bar) return;
+              ctx.fillText(x.v.toFixed(0), bar.x, x.v >= 0 ? bar.y - 6 : bar.y + 14);
+            });
+            ctx.restore();
+          }
+        }]
+      });
+    }
+
+    // 進口煤價的匯率效應：台幣計價煤價（柱）＋年均匯率（線，右軸）＋逐年拆解表
+    function renderCoalFx() {
+      const has = FX && FX.annual && FX.annual.length;
+      const desc = document.getElementById('coalFxDesc');
+      if (!has) {
+        if (desc) desc.textContent = '匯率資料尚未載入（data/usdtwd.json），無法拆解價格與匯率效果。';
+        return;
+      }
+      const fxByYear = Object.fromEntries(FX.annual.map((x) => [x.y, x.p]));
+      // 只取決算年度：預算書沒有逐年匯率假設，混進來會誤導
+      const rows = DATA.coal
+        .filter((x) => x.type !== '院核預算' && x.price && fxByYear[x.year + 1911])
+        .map((x) => {
+          const fx = fxByYear[x.year + 1911];
+          return { y: x.year, usd: x.price, fx, twd: x.price * fx, qty: x.qty };
+        });
+      if (!rows.length) return;
+
+      // 說明文字：用最後一個完整年度 vs 前一年
+      const last = rows[rows.length - 1], prev = rows[rows.length - 2];
+      if (desc && prev) {
+        const dTwd = last.twd - prev.twd;
+        const pe = (last.usd - prev.usd) * prev.fx;
+        const fe = last.usd * (last.fx - prev.fx);
+        const f2 = (v) => v.toLocaleString('zh-TW', { maximumFractionDigits: 1 });
+        const fxDir = last.fx < prev.fx ? '台幣升值' : '台幣貶值';
+        desc.textContent = `煤價以美元計價，實際台幣成本還要乘匯率。${last.y} 年台幣煤價 ${f2(last.twd)} 元/公噸、較 ${prev.y} 年${dTwd < 0 ? '少' : '多'} ${f2(Math.abs(dTwd))} 元，`
+          + `換算成本${dTwd < 0 ? '少' : '多'} ${f2(Math.abs(dTwd * last.qty / 1e8))} 億元，其中國際煤價貢獻 ${f2(pe * last.qty / 1e8)} 億、${fxDir}（年均 ${prev.fx.toFixed(2)}→${last.fx.toFixed(2)}）貢獻 ${f2(fe * last.qty / 1e8)} 億。`;
+      }
+
+      resetCanvas('chartCoalFx');
+      const el = document.getElementById('chartCoalFx');
+      if (el && el.offsetParent !== null) {
+        new Chart(el.getContext('2d'), {
+          data: {
+            labels: rows.map((x) => `${x.y}`),
+            datasets: [
+              { type: 'bar', label: '台幣計價煤價（元/公噸）', data: rows.map((x) => x.twd), backgroundColor: 'rgba(71,85,105,0.75)', borderRadius: 3, yAxisID: 'y', order: 2 },
+              { type: 'line', label: '年均匯率（元/美元）', data: rows.map((x) => x.fx), borderColor: 'rgba(220,38,38,0.9)', backgroundColor: 'rgba(220,38,38,0.1)', borderWidth: 2, pointRadius: 2.5, tension: 0.25, yAxisID: 'y1', order: 1 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: (c) => (c.dataset.yAxisID === 'y1'
+                    ? `匯率：${c.parsed.y.toFixed(2)} 元/美元`
+                    : `台幣煤價：${c.parsed.y.toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 元/公噸（美元 ${rows[c.dataIndex].usd} 元）`)
+                }
+              }
+            },
+            scales: {
+              y: { position: 'left', title: { display: true, text: '元/公噸' }, grid: { color: 'rgba(148,163,184,0.25)' }, ticks: { callback: (v) => v.toLocaleString('zh-TW') } },
+              y1: { position: 'right', title: { display: true, text: '匯率（元/美元）' }, grid: { display: false }, min: Math.min(...rows.map((x) => x.fx)) - 1.5, max: Math.max(...rows.map((x) => x.fx)) + 1.5 },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      // 逐年拆解表（102–114）
+      const host = document.getElementById('coalFxTable');
+      if (host) {
+        const f0 = (v) => v.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+        const f1 = (v) => (v > 0 ? '+' : '') + v.toLocaleString('zh-TW', { maximumFractionDigits: 1 });
+        let body = '';
+        for (let i = 1; i < rows.length; i += 1) {
+          const a = rows[i - 1], b = rows[i];
+          const dTwd = b.twd - a.twd;
+          const pe = (b.usd - a.usd) * a.fx;
+          const fe = b.usd * (b.fx - a.fx);
+          const impact = dTwd * b.qty / 1e8;
+          const cls = (v) => (v > 0 ? 'delta-up' : v < 0 ? 'delta-down' : '');
+          const clsPnl = (v) => (v < 0 ? 'delta-up' : v > 0 ? 'delta-down' : '');
+          body += `<tr><td>${b.y}</td><td>${b.usd.toFixed(2)}</td><td>${b.fx.toFixed(2)}</td><td>${f0(b.twd)}</td>`
+            + `<td class="${cls(dTwd)}">${f0(dTwd)}</td><td class="${cls(pe)}">${f1(pe)}</td><td class="${cls(fe)}">${f1(fe)}</td>`
+            + `<td class="${clsPnl(-impact)}">${f1(-impact)}</td></tr>`;
+        }
+        host.innerHTML = `<table style="font-size:0.95rem;"><thead><tr>`
+          + `<th scope="col">年度</th><th scope="col">煤價<br>(美元/公噸)</th><th scope="col">年均匯率<br>(元/美元)</th><th scope="col">台幣煤價<br>(元/公噸)</th>`
+          + `<th scope="col">台幣煤價<br>年變動</th><th scope="col">價格效果<br>(元/公噸)</th><th scope="col">匯率效果<br>(元/公噸)</th><th scope="col">對燃料成本<br>影響(億元)</th>`
+          + `</tr></thead><tbody>${body}</tbody></table>`;
+      }
     }
 
     function renderFinMonthlyChart() {
