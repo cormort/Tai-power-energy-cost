@@ -520,6 +520,20 @@
     </nav>
 
     <div class="panel" data-panel="overview">
+    <!-- 財務概況：複製財務分頁的 KPI 卡（ovFinKpis ← finBody、ovCarbonKpis ← 碳費卡），數字與財務分頁一致 -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">財務概況</h2>
+          <p class="card-desc">台電會計月報與財務結構壓力摘要。<a href="#view=finance">詳見財務分頁 →</a></p>
+        </div>
+      </div>
+      <h3 style="font-size:1rem;margin:0 0 0.6rem;color:var(--navy);" id="ovFinTitle">台電會計月報</h3>
+      <div id="ovFinKpis">讀取會計月報中…</div>
+      <h3 style="font-size:1rem;margin:0.4rem 0 0.6rem;color:var(--navy);">財務結構壓力與碳費衝擊概況（113–116 年度）</h3>
+      <div id="ovCarbonKpis"></div>
+    </section>
+
     <!-- KPI Cards（數字由 renderKpis() 依 DATA 重算；此處為無 JS 時的備援值） -->
     <section class="kpi-grid">
       <div class="kpi-card">
@@ -557,20 +571,6 @@
         <div class="kpi-value num" id="kpiOilImpact">--</div>
         <div class="kpi-sub" id="kpiOilImpactSub">讀取油價中…</div>
       </div>
-    </section>
-
-    <!-- 財務概況：複製財務分頁的 KPI 卡（ovFinKpis ← finBody、ovCarbonKpis ← 碳費卡），數字與財務分頁一致 -->
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">財務概況</h2>
-          <p class="card-desc">台電會計月報與財務結構壓力摘要。<a href="#view=finance">詳見財務分頁 →</a></p>
-        </div>
-      </div>
-      <h3 style="font-size:1rem;margin:0 0 0.6rem;color:var(--navy);" id="ovFinTitle">台電會計月報</h3>
-      <div id="ovFinKpis">讀取會計月報中…</div>
-      <h3 style="font-size:1rem;margin:0.4rem 0 0.6rem;color:var(--navy);">財務結構壓力與碳費衝擊概況（113–116 年度）</h3>
-      <div id="ovCarbonKpis"></div>
     </section>
 
     <section class="grid-2">
