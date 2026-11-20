@@ -537,6 +537,7 @@
       <button class="tab-btn" data-view="sim">損益試算</button>
       <button class="tab-btn" data-view="power">購電與結構</button>
       <button class="tab-btn" data-view="finance">財務與碳費</button>
+      <button class="tab-btn" data-view="solvency">償債能力</button>
       <button class="tab-btn" data-view="detail">數據明細</button>
     </nav>
 
@@ -1051,7 +1052,7 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">財務結構壓力與碳費衝擊概況（113–116 年度）</h2>
-          <p class="card-desc">114 年雖轉虧為盈（稅後淨利 750.31 億元），但累計虧損仍達 4,257.57 億元、長債逾兆元</p>
+          <p class="card-desc">114 年雖轉虧為盈（稅後淨利 750.31 億元），但年底待彌補虧損仍達 3,507.27 億元、長債逾兆元</p>
         </div>
       </div>
       <div class="kpi-grid" style="margin-bottom:0;">
@@ -1096,6 +1097,84 @@
     </section>
 
     </div><!-- /panel finance -->
+
+    <!-- ══ 償債能力：全部由 data/taipower_accounts.json 計算，隨月報自動更新 ══ -->
+    <div class="panel" data-panel="solvency">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">償債能力與財務結構（台電會計月報）</h2>
+          <p class="card-desc" id="sovDesc">負債比 92% 只是起點；流動比率、現金對短期債務、利息負擔才是財務韌性的關鍵。數字隨台電每月會計月報自動更新（單位：億元）</p>
+        </div>
+      </div>
+      <div class="kpi-grid" id="sovKpis" style="margin-bottom:0;">
+        <div class="kpi-card" style="border-top-color:var(--danger);">
+          <div class="kpi-label"><span>流動比率</span><span class="pill pill-audit">月報</span></div>
+          <div class="kpi-value num" id="sovCurrent">21.2%</div>
+          <div class="kpi-sub" id="sovCurrentSub">流動資產 2,047.65 ／ 流動負債 9,680.23 億元；扣存貨後速動比率 15.1%</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:var(--danger);">
+          <div class="kpi-label"><span>現金 vs 短期債務</span><span class="pill pill-audit">月報</span></div>
+          <div class="kpi-value num" id="sovCash">87.67 億元</div>
+          <div class="kpi-sub" id="sovCashSub">短期債務 7,731.04 億元（短借＋商票＋到期長債），每 1 元現金對 88 元短債</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#475569;">
+          <div class="kpi-label"><span>利息費用（累計）</span><span class="pill pill-audit">年化</span></div>
+          <div class="kpi-value num" id="sovInterest">246.43 億元</div>
+          <div class="kpi-sub" id="sovInterestSub">1–10 月；年化約 295.7 億元，占營業收入 3.01%</div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#475569;">
+          <div class="kpi-label"><span>權益占資產</span><span class="pill pill-audit">月報</span></div>
+          <div class="kpi-value num" id="sovEquity">7.95%</div>
+          <div class="kpi-sub" id="sovEquitySub">權益 2,461.88 億元；累積虧損 3,774.37 億元已吃掉資本 64.7%</div>
+        </div>
+        <div class="kpi-card coal">
+          <div class="kpi-label"><span>存貨（燃料庫存）</span><span class="pill pill-budget">月報</span></div>
+          <div class="kpi-value num" id="sovStock">589.67 億元</div>
+          <div class="kpi-sub" id="sovStockSub">約 0.73 個月營業成本，比一般假設的「兩個月安全存量」薄</div>
+        </div>
+        <div class="kpi-card coal">
+          <div class="kpi-label"><span>帳上看不到的負債</span><span class="pill pill-budget">月報</span></div>
+          <div class="kpi-value num" id="sovHidden">663.54 億元</div>
+          <div class="kpi-sub" id="sovHiddenSub">估計應付土地增值稅；其他負債合計 7,640.26 億元</div>
+        </div>
+      </div>
+      <p class="chart-note" id="sovNote">※ 流動比率＝流動資產÷流動負債；短期債務＝短期借款＋應付商業本票＋應付到期長期負債；利息費用取損益表「財務成本」累計數，年化＝累計÷月數×12。皆為台電自結數，非審定決算。</p>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">損益結構：毛利怎麼被吃光（累計）</h2>
+          <p class="card-desc" id="sovBridgeDesc">營業收入 8,185.78 億元，營業成本 8,129.84 億元（燃料＋購電），毛利僅 55.94 億元；接著被營業費用與業外收支吃掉，稅前淨損 266.56 億元。下圖從毛利開始畫，才看得出每一段吃掉多少。</p>
+        </div>
+      </div>
+      <div class="chart-box" style="height:320px;"><canvas id="chartSovBridge" role="img" aria-label="從營業毛利到稅前淨利的瀑布圖：毛利、營業費用、營業利益、業外收支、稅前淨利"></canvas></div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">累計稅前損益：實際 vs 預算</h2>
+          <p class="card-desc" id="sovCumDesc">累計實際 −266.56 億元，比預算 −180.48 億元多虧 86.09 億元。</p>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chartSovCum" role="img" aria-label="累計稅前損益實際數與預算數折線圖"></canvas></div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2 class="card-title">資產結構（億元）</h2>
+        <div class="chart-box"><canvas id="chartSovAssets" role="img" aria-label="資產結構圓餅圖：不動產廠房及設備、其他資產、流動資產等"></canvas></div>
+        <p class="chart-note" id="sovAssetNote">不動產、廠房及設備 21,338.34 億元占 68.9%，流動資產僅 6.6%。</p>
+      </section>
+      <section class="card">
+        <h2 class="card-title">有息負債結構（億元）</h2>
+        <div class="chart-box"><canvas id="chartSovDebt" role="img" aria-label="有息負債結構長條圖：長期借款、公司債、商業本票、短期借款、到期長期負債"></canvas></div>
+        <p class="chart-note" id="sovDebtNote">有息負債合計 18,672.52 億元，其中 41% 在一年內到期。</p>
+      </section>
+    </div>
+    </div><!-- /panel solvency -->
   </main>
 
   <footer class="container">
@@ -1610,6 +1689,7 @@
       sim: [],
       power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart'],
       finance: ['finMonthlyChart'],
+      solvency: ['chartSovBridge', 'chartSovCum', 'chartSovAssets', 'chartSovDebt'],
       detail: []
     };
     const CHART_RENDERERS = {
@@ -1622,6 +1702,10 @@
       gasMonthlyChart: renderGasMonthlyChart,
       cpcHistoryChart: renderCpcChart,
       finMonthlyChart: () => renderFinMonthlyChart(),
+      chartSovBridge: renderSovBridge,
+      chartSovCum: renderSovCum,
+      chartSovAssets: renderSovAssets,
+      chartSovDebt: renderSovDebt,
       gasUsageChart: () => renderUsageChart('gasUsageChart', TP_GAS, 1e5, '億 m³'),
       coalUsageChart: () => renderUsageChart('coalUsageChart', TP_COAL, 1e4, '萬公噸'),
       fuelOilUsageChart: () => renderUsageChart('fuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
@@ -2301,6 +2385,8 @@
         <p style="font-size:0.85rem;color:var(--text-light);margin:0.75rem 0 0;">※ 台電每月會計月報（自結數，非審定決算）；差異欄紅色代表對損益不利（收入低於預算或成本高於預算）。</p>`;
       mirrorKpis(el.querySelector('.kpi-grid'), 'ovFinKpis');
       renderChartIfVisible('finMonthlyChart');
+      renderSolvency();                       // 償債能力分頁（卡片＋說明）
+      ['chartSovBridge', 'chartSovCum', 'chartSovAssets', 'chartSovDebt'].forEach(renderChartIfVisible);
     });
 
     // 把財務分頁的 KPI 卡複製到總覽（去掉 id 避免重複），確保兩處數字一致
@@ -2309,6 +2395,260 @@
       c.removeAttribute('id');
       c.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
       document.getElementById(destId).replaceChildren(c);
+    }
+
+    // ══ 償債能力分頁：全部由 data/taipower_accounts.json 計算 ══
+    // 卡片、四張圖與說明文字都吃同一組指標，月報更新後自動反映，不必改程式。
+    let SOV = null;
+    function solvencyMetrics() {
+      if (!TP_ACC) return null;
+      if (SOV && SOV.ym === TP_ACC.latest) return SOV;
+      const bsv = (c) => { const r = (TP_ACC.bs || []).find((x) => x.code === c); return r ? r.amt : null; };
+      const isv = (c) => (TP_ACC.is || []).find((x) => x.code === c) || null;
+      const num = (r, k) => (r && typeof r[k] === 'number' ? r[k] : 0);
+
+      const asset = bsv('1'), cur = bsv('11'), cash = bsv('1101'), stock = bsv('1108');
+      const cl = bsv('21'), liab = bsv('2'), equity = bsv('3'), capital = bsv('31'), retained = bsv('33');
+      const stLoan = bsv('210102'), cp = bsv('210103'), dueLt = bsv('210107');
+      const ltLoan = bsv('240104'), bonds = bsv('240101');
+      const otherLiab = bsv('28'), lvit = bsv('280302');
+
+      const rev = num(isv('41'), 'yA'), cost = num(isv('51'), 'yA'), gross = num(isv('61'), 'yA');
+      const opex = num(isv('52'), 'yA'), opInc = num(isv('62'), 'yA');
+      const nonOpIn = num(isv('49'), 'yA'), nonOpOut = num(isv('59'), 'yA');
+      const finCost = num(isv('5901'), 'yA'), pretax = num(isv('64'), 'yA'), net = num(isv('68'), 'yA');
+      const months = (TP_ACC.monthly || []).length || 1;
+
+      const shortDebt = stLoan + cp + dueLt;
+      const intDebt = shortDebt + ltLoan + bonds;
+
+      SOV = {
+        ym: TP_ACC.latest, asset, liab, equity, capital, retained,
+        currentRatio: cl ? cur / cl * 100 : null,
+        quickRatio: cl ? (cur - stock) / cl * 100 : null,
+        cur, stock, cash, cl,
+        shortDebt, intDebt, dueWithin1y: intDebt ? shortDebt / intDebt * 100 : null,
+        cashCoverage: shortDebt ? cash / shortDebt * 100 : null,
+        cashPerDebt: shortDebt && cash ? shortDebt / cash : null,
+        equityRatio: asset ? equity / asset * 100 : null,
+        retainedVsCapital: capital ? Math.abs(retained) / capital * 100 : null,
+        stockMonths: cost ? stock / (cost / months) : null,
+        lvit, otherLiab, ppe: bsv('14'),
+        rev, cost, gross, opex, opInc, nonOp: nonOpIn - nonOpOut, pretax, net,
+        finCost, interestRunRate: finCost / months * 12,
+        interestToRev: rev ? finCost / rev * 100 : null,
+        months, roc: TP_ACC.latest.slice(0, 3), mm: +TP_ACC.latest.slice(3)
+      };
+      return SOV;
+    }
+
+    function renderSolvency() {
+      const s = solvencyMetrics();
+      if (!s) return;
+      const n2 = (v) => (v == null ? '—' : v.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      const pct = (v, d) => (v == null ? '—' : `${v.toFixed(d == null ? 1 : d)}%`);
+      const period = `${+s.roc}/${s.mm}`;
+
+      setKpi('sovCurrent', pct(s.currentRatio));
+      setKpi('sovCurrentSub', `流動資產 ${n2(s.cur)} ／ 流動負債 ${n2(s.cl)} 億元；扣存貨後速動比率 ${pct(s.quickRatio)}`);
+      setKpi('sovCash', `${n2(s.cash)} 億元`);
+      setKpi('sovCashSub', `短期債務 ${n2(s.shortDebt)} 億元（短借＋商票＋到期長債），每 1 元現金對 ${Math.round(s.cashPerDebt)} 元短債`);
+      setKpi('sovInterest', `${n2(s.finCost)} 億元`);
+      setKpi('sovInterestSub', `1–${s.mm} 月累計；年化約 ${n2(s.interestRunRate)} 億元，占營業收入 ${pct(s.interestToRev, 2)}`);
+      setKpi('sovEquity', pct(s.equityRatio, 2));
+      setKpi('sovEquitySub', `權益 ${n2(s.equity)} 億元；累積虧損 ${n2(Math.abs(s.retained))} 億元已吃掉資本 ${pct(s.retainedVsCapital)}`);
+      setKpi('sovStock', `${n2(s.stock)} 億元`);
+      setKpi('sovStockSub', `約 ${s.stockMonths.toFixed(2)} 個月營業成本，比一般假設的「兩個月安全存量」薄`);
+      setKpi('sovHidden', `${n2(s.lvit)} 億元`);
+      setKpi('sovHiddenSub', `估計應付土地增值稅；其他負債合計 ${n2(s.otherLiab)} 億元`);
+      setKpi('sovDesc', `台電 ${period} 會計月報自結數；負債比 ${pct(s.liab / s.asset * 100)} 只是起點，流動比率、現金對短期債務、利息負擔才是財務韌性的關鍵（單位：億元）`);
+      setKpi('sovBridgeDesc', `1–${s.mm} 月營業收入 ${n2(s.rev)} 億元，扣掉燃料與購電等營業成本 ${n2(s.cost)} 億元後毛利僅 ${n2(s.gross)} 億元；營業利益 ${n2(s.opInc)} 億元，再加業外收支 ${n2(s.nonOp)} 億元（其中利息費用 ${n2(s.finCost)} 億元）後，稅前淨損 ${n2(Math.abs(s.pretax))} 億元。`);
+
+      // 累計落差
+      const ms = TP_ACC.monthly || [];
+      let ca = 0, cb = 0;
+      ms.forEach((x) => { ca += x.pretaxA || 0; cb += x.pretaxB || 0; });
+      setKpi('sovCumDesc', `累計實際 ${n2(ca)} 億元，對預算 ${n2(cb)} 億元，${ca < cb ? '多虧' : '少虧'} ${n2(Math.abs(ca - cb))} 億元；月報自結數，全年預算數隨月份按比例認列。`);
+      setKpi('sovAssetNote', `不動產、廠房及設備 ${n2(s.ppe)} 億元占 ${pct(s.ppe / s.asset * 100)}，流動資產僅 ${pct(s.cur / s.asset * 100)}。`);
+      setKpi('sovDebtNote', `有息負債合計 ${n2(s.intDebt)} 億元，其中 ${pct(s.dueWithin1y)} 在一年內到期（短借＋商票＋到期長債）。`);
+      setKpi('sovNote', `※ 流動比率＝流動資產÷流動負債；短期債務＝短期借款＋應付商業本票＋應付到期長期負債；利息費用取損益表「財務成本」累計數，年化＝累計÷${s.mm}×12。皆為台電 ${period} 自結數，非審定決算；月報每月更新，本頁數字隨之自動改變。`);
+    }
+
+    // 損益瀑布：從營業毛利起算（把 8,000 億的收入/成本留在文字，圖才看得出差額）
+    // 毛利 → 營業費用 → 營業利益 → 業外收支 → 稅前淨利
+    function renderSovBridge() {
+      const s = solvencyMetrics();
+      if (!s) return;
+      resetCanvas('chartSovBridge');
+      const steps = [
+        { label: '營業毛利', v: s.gross, kind: 'sub' },
+        { label: '營業費用', v: -s.opex, kind: 'out' },
+        { label: '營業利益', v: s.opInc, kind: 'sub' },
+        { label: '業外收支', v: s.nonOp, kind: 'out' },
+        { label: '稅前淨利', v: s.pretax, kind: 'final' }
+      ];
+      let run = 0;
+      const bars = steps.map((st) => {
+        if (st.kind === 'sub' || st.kind === 'final') {
+          run = st.v;
+          return [Math.min(0, st.v), Math.max(0, st.v)];
+        }
+        const from = run;
+        run += st.v;
+        return [Math.min(from, run), Math.max(from, run)];
+      });
+      const color = (k) => (k === 'out' ? 'rgba(220,38,38,0.85)'
+        : k === 'final' ? 'rgba(30,58,95,0.9)' : 'rgba(71,85,105,0.8)');
+      new Chart(document.getElementById('chartSovBridge').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: steps.map((x) => x.label),
+          datasets: [{
+            data: bars,
+            backgroundColor: steps.map((x) => color(x.kind)),
+            borderRadius: 3,
+            barPercentage: 0.62
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          layout: { padding: { top: 18 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (c) => {
+                  const st = steps[c.dataIndex];
+                  return `${st.label}：${st.v.toFixed(2)} 億元`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              title: { display: true, text: '億元' },
+              grid: { color: 'rgba(148,163,184,0.25)' },
+              ticks: { callback: (v) => v.toLocaleString('zh-TW') }
+            },
+            x: { grid: { display: false } }
+          }
+        },
+        plugins: [{
+          // 在每根柱子上標數值，讀者不必開 tooltip
+          id: 'valueLabels',
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = '600 12px system-ui, -apple-system, "Noto Sans TC", sans-serif';
+            ctx.fillStyle = '#334155';
+            ctx.textAlign = 'center';
+            steps.forEach((st, i) => {
+              const el = meta.data[i];
+              if (!el) return;
+              const y = st.v >= 0 ? el.y - 8 : el.y + 16;
+              ctx.fillText(st.v.toFixed(1), el.x, y);
+            });
+            ctx.restore();
+          }
+        }]
+      });
+    }
+
+    // 累計稅前損益 實際 vs 預算
+    function renderSovCum() {
+      if (!TP_ACC) return;
+      resetCanvas('chartSovCum');
+      const ms = TP_ACC.monthly || [];
+      let a = 0, b = 0;
+      const ca = ms.map((x) => (a += x.pretaxA || 0));
+      const cb = ms.map((x) => (b += x.pretaxB || 0));
+      new Chart(document.getElementById('chartSovCum').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: ms.map((x) => `${+x.ym.slice(3)}月`),
+          datasets: [
+            { label: '累計稅前 實際', data: ca, borderColor: 'rgba(220,38,38,1)', backgroundColor: 'rgba(220,38,38,0.12)', borderWidth: 2.5, fill: true, tension: 0.25, pointRadius: 3 },
+            { label: '累計稅前 預算', data: cb, borderColor: 'rgba(100,116,139,1)', backgroundColor: 'rgba(100,116,139,0.08)', borderDash: [6, 4], borderWidth: 2, fill: true, tension: 0.25, pointRadius: 3 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: { label: (c) => `${c.dataset.label}：${c.parsed.y.toFixed(2)} 億元` } }
+          },
+          scales: {
+            y: { title: { display: true, text: '累計億元' }, grid: { color: 'rgba(148,163,184,0.25)' }, ticks: { callback: (v) => v.toLocaleString('zh-TW') } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // 資產結構
+    function renderSovAssets() {
+      if (!TP_ACC) return;
+      resetCanvas('chartSovAssets');
+      const pick = [['14', '不動產、廠房及設備'], ['19', '其他資產'], ['11', '流動資產'], ['16', '投資性不動產'],
+        ['15', '使用權資產'], ['13', '基金、投資及長期應收款'], ['17', '無形資產']];
+      const get = (c) => { const r = (TP_ACC.bs || []).find((x) => x.code === c); return r ? r.amt : 0; };
+      const items = pick.map(([c, n]) => [n, get(c)]).filter(([, v]) => v > 0);
+      new Chart(document.getElementById('chartSovAssets').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: items.map((x) => x[0]),
+          datasets: [{
+            data: items.map((x) => x[1]),
+            backgroundColor: ['#1e3a5f', '#475569', '#0e7490', '#0d9488', '#7c8ba1', '#94a3b8', '#cbd5e1'],
+            borderWidth: 1, borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+            tooltip: { callbacks: { label: (c) => `${c.label}：${c.parsed.toLocaleString('zh-TW', { maximumFractionDigits: 2 })} 億元（${(c.parsed / c.dataset.data.reduce((x, y) => x + y, 0) * 100).toFixed(1)}%）` } }
+          }
+        }
+      });
+    }
+
+    // 有息負債結構
+    function renderSovDebt() {
+      if (!TP_ACC) return;
+      resetCanvas('chartSovDebt');
+      const get = (c) => { const r = (TP_ACC.bs || []).find((x) => x.code === c); return r ? r.amt : 0; };
+      const items = [
+        ['長期借款', get('240104'), false],
+        ['應付公司債券', get('240101'), false],
+        ['應付商業本票', get('210103'), true],
+        ['短期借款', get('210102'), true],
+        ['應付到期長期負債', get('210107'), true]
+      ].filter((x) => x[1] > 0);
+      new Chart(document.getElementById('chartSovDebt').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: items.map((x) => x[0]),
+          datasets: [{
+            data: items.map((x) => x[1]),
+            backgroundColor: items.map((x) => (x[2] ? 'rgba(220,38,38,0.8)' : 'rgba(30,58,95,0.8)')),
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (c) => `${c.parsed.x.toLocaleString('zh-TW', { maximumFractionDigits: 2 })} 億元` } }
+          },
+          scales: {
+            x: { title: { display: true, text: '新台幣億元' }, grid: { color: 'rgba(148,163,184,0.25)' } },
+            y: { grid: { display: false } }
+          }
+        }
+      });
     }
 
     function renderFinMonthlyChart() {
