@@ -840,6 +840,7 @@
           <strong>資料缺口（請勿讀成趨勢）：</strong>2022-05 至 2025-07 共 <strong>39 個月</strong>、
           2025-09 至 2026-07 共 <strong>11 個月</strong>無公開月資料，圖上以灰色區塊標示並斷線，<strong>不以直線補值</strong>。
           陰影區間內的走勢屬推定，僅 2022-04、2025-08（12.77）、2026-08（20.44）為實有觀測點。
+          <br><span id="cpcLiveNote"></span>
         </p>
       </div>
     </section>
@@ -1902,19 +1903,42 @@
 
     }
 
+    // data/cpc_gas.json 由 GitHub Actions 每月 1 日抓中油牌價寫入；抓不到時沿用內嵌資料
+    let CPC_LIVE = [];
+    fetch('data/cpc_gas.json', { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        CPC_LIVE = rows;
+        const last = rows[rows.length - 1];
+        const el = document.getElementById('cpcLiveNote');
+        if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³（自 2026-11 起每月自動抓取中油牌價表）`;
+        renderChartIfVisible('cpcHistoryChart');
+      })
+      .catch(() => {});
+
     function renderCpcChart() {
       resetCanvas('cpcHistoryChart');
-      const cpcMap = Object.fromEntries(EXTRA.cpc_gas_history.map(x => [x.d, x.p]));
+      const cpcMap = Object.fromEntries(EXTRA.cpc_gas_history.concat(CPC_LIVE).map(x => [x.d, x.p]));
+      const lastYm = Object.keys(cpcMap).sort().pop();
       const cpcLabels = [];
       const cpcValues = [];
-      for (let y = 2009; y <= 2026; y++) {
-        const maxM = y === 2026 ? 8 : 12;
+      for (let y = 2009; y <= +lastYm.slice(0, 4); y++) {
+        const maxM = y === +lastYm.slice(0, 4) ? +lastYm.slice(5) : 12;
         for (let m = 1; m <= maxM; m++) {
           const ym = `${y}-${String(m).padStart(2, '0')}`;
           cpcLabels.push(ym);
           cpcValues.push(cpcMap[ym] !== undefined ? cpcMap[ym] : null);
         }
       }
+      // 缺口 = 前後皆有值、中間為 null 的區段
+      const gapRanges = [];
+      let prev = -1;
+      cpcValues.forEach((v, i) => {
+        if (v == null) return;
+        if (prev >= 0 && i - prev > 1) gapRanges.push([prev, i]);
+        prev = i;
+      });
+      const isolated = (i) => cpcValues[i] != null && cpcValues[i - 1] == null && cpcValues[i + 1] == null;
       new Chart(document.getElementById('cpcHistoryChart').getContext('2d'), {
         type: 'line',
         data: {
@@ -1927,11 +1951,8 @@
             fill: true,
             // 不以直線跨接缺口：2022-05～2025-07、2025-09～2026-07 無公開月資料
             spanGaps: false,
-            pointRadius: (c) => (['2022-04', '2025-08', '2026-08'].includes(cpcLabels[c.dataIndex]) ? 4 : 0),
+            pointRadius: (c) => (cpcLabels[c.dataIndex] === '2022-04' || isolated(c.dataIndex) ? 4 : 0),
             pointBackgroundColor: '#0284c7',
-            segment: {
-              borderDash: (ctx) => ctx.p1DataIndex > cpcLabels.indexOf('2022-04') ? [5, 5] : undefined
-            },
             borderWidth: 2
           }]
         },
@@ -1941,10 +1962,7 @@
           plugins: {
             legend: { position: 'bottom' },
             gapBands: {
-              ranges: [
-                [cpcLabels.indexOf('2022-04'), cpcLabels.indexOf('2025-08')],
-                [cpcLabels.indexOf('2025-08'), cpcLabels.indexOf('2026-08')]
-              ]
+              ranges: gapRanges
             },
             tooltip: {
               callbacks: {

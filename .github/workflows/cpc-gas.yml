@@ -1,0 +1,25 @@
+name: 更新中油天然氣牌價
+
+on:
+  schedule:
+    # 台灣時間每月 1–3 日 09:00（UTC 01:00）；重跑同月份只會覆寫，不會重複
+    - cron: "0 1 1-3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fetch_cpc_gas.py
+      - name: Commit if changed
+        run: |
+          git diff --quiet data/cpc_gas.json && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/cpc_gas.json
+          git commit -m "data: 中油天然氣電業用戶牌價 $(date -u +%Y-%m)"
+          git push
