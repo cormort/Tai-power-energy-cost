@@ -18,6 +18,10 @@ jobs:
         continue-on-error: true
       - run: python3 scripts/fetch_taipower_fuel.py
         continue-on-error: true
+      - run: python3 scripts/fetch_import_price.py
+        continue-on-error: true
+      - run: python3 scripts/fetch_taipower_accounts.py
+        continue-on-error: true
       - name: Commit if changed
         run: |
           git diff --quiet data/ && exit 0

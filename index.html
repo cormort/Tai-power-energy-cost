@@ -547,6 +547,11 @@
         <div class="kpi-value num" id="kpiCpcImpact">--</div>
         <div class="kpi-sub" id="kpiCpcImpactSub">讀取中油牌價中…</div>
       </div>
+      <div class="kpi-card coal" style="border-top-color:var(--danger);">
+        <div class="kpi-label"><span id="kpiCoalLabel">進口煤價・剩餘月份損益影響</span><span class="pill pill-budget">每日更新</span></div>
+        <div class="kpi-value num" id="kpiCoalImpact">--</div>
+        <div class="kpi-sub" id="kpiCoalImpactSub">讀取進口煤價中…</div>
+      </div>
     </section>
 
     <!-- Charts Row 1 -->
@@ -767,6 +772,16 @@
       <div id="cpcImpact" style="font-size:1.05rem;">讀取中油牌價中…</div>
     </section>
 
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">進口煤價對本年度剩餘月份損益影響</h2>
+          <p class="card-desc">以能源署月報「進口能源價格」煙煤-燃料煤 CIF 月均價，對照當年度預算國際煤價基準，設算燃煤成本增減；匯率連動上方試算器</p>
+        </div>
+      </div>
+      <div id="coalImpact" style="font-size:1.05rem;">讀取進口煤價中…</div>
+    </section>
+
     </div><!-- /panel sim -->
 
     <div class="panel" data-panel="detail">
@@ -928,6 +943,17 @@
     </div><!-- /panel power -->
 
     <div class="panel" data-panel="finance">
+    <!-- Section: Taipower latest self-reported financials -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title" id="finTitle">台電會計月報</h2>
+          <p class="card-desc">資料來源：<a href="https://data.gov.tw/dataset/18917" target="_blank" rel="noopener">政府資料開放平臺「台灣電力公司會計報表」</a>，每月更新（單位：億元）</p>
+        </div>
+      </div>
+      <div id="finBody" style="font-size:1rem;">讀取財務資料中…</div>
+    </section>
+
     <!-- Section: Carbon Emissions & Financial Pressure -->
     <section class="card">
       <div class="card-header">
@@ -1371,6 +1397,7 @@
       document.getElementById('simOilOut').textContent = fmtImp(impOil);
       document.getElementById('simDieselOut').textContent = fmtImp(impDiesel);
       document.getElementById('simCarbonOut').textContent = fmtImp(impCarbon);
+      if (window.fuelDataReady) renderCoalImpact();
     }
 
     function bindPair(rangeId, numId) {
@@ -1475,7 +1502,7 @@
       tariff: ['tariffChart'],
       sim: [],
       power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart'],
-      finance: [],
+      finance: ['finMonthlyChart'],
       detail: []
     };
     const CHART_RENDERERS = {
@@ -1487,6 +1514,7 @@
       ppChart: renderPpChart,
       gasMonthlyChart: renderGasMonthlyChart,
       cpcHistoryChart: renderCpcChart,
+      finMonthlyChart: () => renderFinMonthlyChart(),
       gasUsageChart: () => renderUsageChart('gasUsageChart', TP_GAS, 1e5, '億 m³'),
       coalUsageChart: () => renderUsageChart('coalUsageChart', TP_COAL, 1e4, '萬公噸'),
       fuelOilUsageChart: () => renderUsageChart('fuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
@@ -1964,16 +1992,19 @@
     }
 
     // data/cpc_gas.json 由 GitHub Actions 每月 1 日抓中油牌價寫入；抓不到時沿用內嵌資料
-    let CPC_LIVE = [], TP_GAS = [], TP_COAL = [], TP_FUEL_OIL = [], TP_DIESEL = [];
+    let CPC_LIVE = [], TP_GAS = [], TP_COAL = [], TP_FUEL_OIL = [], TP_DIESEL = [], COAL_PRICE = [];
     const getJson = (u) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []);
-    Promise.all(['cpc_gas', 'taipower_gas_monthly', 'taipower_coal_monthly', 'taipower_fuel_oil_monthly', 'taipower_diesel_monthly']
+    Promise.all(['cpc_gas', 'taipower_gas_monthly', 'taipower_coal_monthly', 'taipower_fuel_oil_monthly', 'taipower_diesel_monthly', 'import_coal_price']
       .map(f => getJson(`data/${f}.json`)))
-      .then(([rows, usage, coal, oil, diesel]) => {
+      .then(([rows, usage, coal, oil, diesel, coalPrice]) => {
         CPC_LIVE = rows;
         TP_GAS = usage;
         TP_COAL = coal;
         TP_FUEL_OIL = oil;
         TP_DIESEL = diesel;
+        COAL_PRICE = coalPrice;
+        window.fuelDataReady = true;
+        renderCoalImpact();
         ['gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart'].forEach(renderChartIfVisible);
         const last = rows[rows.length - 1];
         const el = document.getElementById('cpcLiveNote');
@@ -1982,6 +2013,28 @@
         renderCpcImpact();
       })
       .catch(() => { document.getElementById('cpcImpact').textContent = '無法讀取中油牌價資料。'; });
+
+    const ym = (yy, m) => `${yy}-${String(m).padStart(2, '0')}`;
+    const sign = (v) => (v >= 0 ? '+' : '');
+    const f2 = (v) => `${sign(v)}${v.toFixed(2)}`;
+    const est = (s) => `<span style="color:var(--text-light)">${s}*</span>`;
+    // y 年 1–12 月用量兩情境：[去年同月 × 今年累計成長, 年度預算依去年逐月分布攤算]；有實績的月份兩者皆為實績
+    function usageScenarios(rows, y, budgetTot) {
+      const used = Object.fromEntries(rows.map(x => [x.d, x.q]));
+      let ytd = 0, ytdPrev = 0, prevTot = 0, lastActual = null;
+      for (let m = 1; m <= 12; m++) {
+        const cur = used[ym(y, m)], prev = used[ym(y - 1, m)];
+        if (cur != null && prev != null) { ytd += cur; ytdPrev += prev; }
+        prevTot += prev ?? 0;
+      }
+      const growth = ytdPrev ? ytd / ytdPrev : 1;
+      const months = Array.from({ length: 12 }, (_, i) => {
+        const m = i + 1, cur = used[ym(y, m)], prev = used[ym(y - 1, m)] ?? 0;
+        if (cur != null) lastActual = m;
+        return { m, actual: cur != null, qs: cur != null ? [cur, cur] : [prev * growth, prevTot ? budgetTot * prev / prevTot : 0] };
+      });
+      return { growth, lastActual, months };
+    }
 
     // 預算統約部分（大潭合約另計價，不隨中油牌價變動），數值同 DATA.gas 的 note
     const GAS_CONTRACT_BUDGET = { 115: { q: 173.02e8, p: 15.7933 }, 116: { q: 174.31e8, p: 13.6893 } };
@@ -1998,31 +2051,14 @@
         el.textContent = document.getElementById('kpiCpcImpactSub').textContent = `${roc} 年預算統約單價尚未建檔，無法設算。`;
         return;
       }
-      const ym = (yy, m) => `${yy}-${String(m).padStart(2, '0')}`;
       const price = Object.fromEntries(CPC_LIVE.map(x => [x.d, x.p]));
-      const used = Object.fromEntries(TP_GAS.map(x => [x.d, x.q * 1000]));
       // 統約占台電總用氣比例（大潭合約另計價，不隨牌價變動）
       const share = b.q / DATA.gas.find(x => x.year === roc).qty;
-      // 尚無實績月份：去年同月 × 今年累計成長率
-      let ytd = 0, ytdPrev = 0;
-      for (let m = 1; m <= 12; m++) {
-        if (used[ym(y, m)] != null && used[ym(y - 1, m)] != null) { ytd += used[ym(y, m)]; ytdPrev += used[ym(y - 1, m)]; }
-      }
-      const growth = ytdPrev ? ytd / ytdPrev : 1;
-      // 115 預算情境：年度預算總用氣依去年逐月分布攤算
-      let prevTot = 0;
-      for (let m = 1; m <= 12; m++) prevTot += used[ym(y - 1, m)] ?? 0;
       const budgetTot = DATA.gas.find(x => x.year === roc).qty;
-      const sign = (v) => (v >= 0 ? '+' : '');
-      const f2 = (v) => `${sign(v)}${v.toFixed(2)}`;
-      const est = (s) => `<span style="color:var(--text-light)">${s}*</span>`;
+      const { growth, lastActual, months } = usageScenarios(TP_GAS.map(x => ({ d: x.d, q: x.q * 1000 })), y, budgetTot);
       const doneA = [0, 0], restA = [0, 0];
-      let rows = '', lastActual = null;
-      for (let m = 1; m <= 12; m++) {
-        const actual = used[ym(y, m)] != null;
-        if (actual) lastActual = m;
-        const prev = used[ym(y - 1, m)] ?? 0;
-        const qs = actual ? [used[ym(y, m)], used[ym(y, m)]] : [prev * growth, prevTot ? budgetTot * prev / prevTot : 0];
+      let rows = '';
+      for (const { m, actual, qs } of months) {
         // 預算單價為未稅（預算書 114/8、115/8 恰為牌價 ÷ 1.05），牌價須先扣 5% 營業稅再比較
         const net = (price[ym(y, m)] ?? last.p) / 1.05;
         const imps = qs.map(q => (net - b.p) * q * share / 1e8);
@@ -2050,6 +2086,133 @@
           <thead><tr><th>月份</th><th>用氣 (億m³)<br>${roc - 1}推估成長</th><th>用氣 (億m³)<br>${roc}預算</th><th>牌價未稅<br>(元/m³)</th><th>較預算</th><th>影響 (億元)<br>${roc - 1}推估成長</th><th>影響 (億元)<br>${roc}預算</th></tr></thead>
           <tbody>${rows}</tbody></table></div>
         <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ 用氣量為能源署「發電燃料耗用」台電進口液化天然氣實績${lastActual ? `（至 ${lastActual} 月）` : ''}；* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算用氣 ${(budgetTot / 1e8).toFixed(2)} 億m³ 依 ${roc - 1} 年逐月分布攤算；牌價未公布月份沿用最新。影響僅計統約部分（占 ${(share * 100).toFixed(1)}%，依預算比例），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。資料每日自動更新。</p>`;
+    }
+
+    // 台電會計月報（data/taipower_accounts.json，取自政府資料開放平臺 dataset 18917，每日檢查更新）
+    var TP_ACC = null; // var：分頁初始渲染可能早於此行執行
+    fetch('data/taipower_accounts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then((acc) => {
+      const el = document.getElementById('finBody');
+      if (!acc) { el.textContent = '無法讀取會計月報資料。'; return; }
+      TP_ACC = acc;
+      const roc = acc.latest.slice(0, 3), mm = +acc.latest.slice(3);
+      const row = (code) => acc.is.find(r => r.code === code);
+      const pretax = row('64'), thermal = row('510108');
+      const bs = (code) => acc.bs.find(r => r.code === code)?.amt;
+      const debtRatio = bs('2') / bs('1') * 100;
+      const fmt = (v) => v == null ? '—' : v.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const diffCls = (v, costLike) => ((costLike ? v > 0 : v < 0) ? 'delta-up' : 'delta-down');
+      const isCost = (code) => /^(5|6[5])/.test(code);
+      const isRows = acc.is.filter(r => r.lv <= 3 || r.code.startsWith('5101'));
+      const isTbl = `<div class="table-wrap"><table style="font-size:0.95rem;">
+        <thead><tr><th>科目</th><th>1–${mm} 月實際</th><th>1–${mm} 月預算</th><th>差異</th><th>${roc} 年法定預算</th></tr></thead>
+        <tbody>${isRows.map(r => {
+          const d = r.yA - r.yB;
+          return `<tr${r.bold ? ' style="font-weight:700;"' : ''}><td style="padding-left:${0.75 + (r.lv - 2) * 1.1}rem;">${r.name}</td>
+            <td class="num">${fmt(r.yA)}</td><td class="num">${fmt(r.yB)}</td>
+            <td class="num"><span class="${diffCls(d, isCost(r.code))}">${f2(d)}</span></td><td class="num">${fmt(r.ann)}</td></tr>`;
+        }).join('')}</tbody></table></div>`;
+      const bsTbl = `<div class="table-wrap"><table style="font-size:0.95rem;">
+        <thead><tr><th>科目</th><th>${roc} 年 ${mm} 月底</th></tr></thead>
+        <tbody>${acc.bs.filter(r => r.lv <= 2).map(r => `<tr${r.lv === 1 ? ' style="font-weight:700;"' : ''}><td style="padding-left:${0.75 + (r.lv - 1) * 1.1}rem;">${r.name}</td><td class="num">${fmt(r.amt)}</td></tr>`).join('')}
+        <tr style="font-weight:700;"><td>負債比率</td><td class="num">${debtRatio.toFixed(1)}%</td></tr></tbody></table></div>`;
+      const last = acc.monthly[acc.monthly.length - 1];
+      document.getElementById('finTitle').textContent = `台電會計月報（${roc} 年 1–${mm} 月）`;
+      el.innerHTML = `
+        <div class="kpi-grid" style="margin-bottom:1rem;">
+          <div class="kpi-card" style="border-top-color:var(--danger);">
+            <div class="kpi-label"><span>1–${mm} 月累計稅前淨利（淨損）</span></div>
+            <div class="kpi-value num"><span class="${pretax.yA < 0 ? 'delta-up' : 'delta-down'}">${fmt(pretax.yA)} 億元</span></div>
+            <div class="kpi-sub">預算 ${fmt(pretax.yB)} 億元，差異 <span class="${diffCls(pretax.yA - pretax.yB)}">${f2(pretax.yA - pretax.yB)}</span> 億元；全年法定預算 ${fmt(pretax.ann)} 億元</div>
+          </div>
+          <div class="kpi-card" style="border-top-color:var(--danger);">
+            <div class="kpi-label"><span>${mm} 月單月稅前淨利（淨損）</span></div>
+            <div class="kpi-value num"><span class="${last.pretaxA < 0 ? 'delta-up' : 'delta-down'}">${fmt(last.pretaxA)} 億元</span></div>
+            <div class="kpi-sub">預算 ${fmt(last.pretaxB)} 億元，差異 <span class="${diffCls(last.pretaxA - last.pretaxB)}">${f2(last.pretaxA - last.pretaxB)}</span> 億元</div>
+          </div>
+          <div class="kpi-card coal">
+            <div class="kpi-label"><span>1–${mm} 月累計火力發電費用</span></div>
+            <div class="kpi-value num">${fmt(thermal.yA)} 億元</div>
+            <div class="kpi-sub">預算 ${fmt(thermal.yB)} 億元，超支 <span class="${diffCls(thermal.yA - thermal.yB, true)}">${f2(thermal.yA - thermal.yB)}</span> 億元（${f2((thermal.yA / thermal.yB - 1) * 100)}%）</div>
+          </div>
+          <div class="kpi-card" style="border-top-color:#475569;">
+            <div class="kpi-label"><span>${roc} 年 ${mm} 月底負債比率</span></div>
+            <div class="kpi-value num">${debtRatio.toFixed(1)}%</div>
+            <div class="kpi-sub">負債 ${fmt(bs('2'))} ／ 資產 ${fmt(bs('1'))} 億元；累積虧損 ${fmt(bs('33'))} 億元</div>
+          </div>
+        </div>
+        <div class="chart-box" style="margin-bottom:1rem;"><canvas id="finMonthlyChart" role="img" aria-label="台電逐月稅前淨利實際數與預算數比較"></canvas></div>
+        <div class="grid-2" style="margin-bottom:0;">
+          <div><h3 style="font-size:1rem;margin:0 0 0.5rem;color:var(--navy);">損益表（累計，億元）</h3>${isTbl}</div>
+          <div><h3 style="font-size:1rem;margin:0 0 0.5rem;color:var(--navy);">資產負債表（億元）</h3>${bsTbl}</div>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-light);margin:0.75rem 0 0;">※ 台電每月會計月報（自結數，非審定決算）；差異欄紅色代表對損益不利（收入低於預算或成本高於預算）。</p>`;
+      renderChartIfVisible('finMonthlyChart');
+    });
+
+    function renderFinMonthlyChart() {
+      resetCanvas('finMonthlyChart');
+      if (!TP_ACC) return;
+      const ms = TP_ACC.monthly;
+      new Chart(document.getElementById('finMonthlyChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ms.map(x => `${+x.ym.slice(3)}月`),
+          datasets: [
+            { label: '稅前淨利 實際', data: ms.map(x => x.pretaxA), backgroundColor: ms.map(x => x.pretaxA < 0 ? 'rgba(220,38,38,0.8)' : 'rgba(5,150,105,0.8)'), borderRadius: 4 },
+            { label: '稅前淨利 預算', data: ms.map(x => x.pretaxB), backgroundColor: 'rgba(148,163,184,0.55)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: { label: (c) => `${c.dataset.label}：${c.parsed.y.toFixed(2)} 億元` } }
+          },
+          scales: { y: { title: { display: true, text: '新台幣億元' } } }
+        }
+      });
+    }
+
+    // 進口燃料煤 CIF（全國均價）對照預算國際煤價基準；剩餘月份 = 本月起
+    function renderCoalImpact() {
+      const el = document.getElementById('coalImpact');
+      const sub = document.getElementById('kpiCoalImpactSub');
+      const last = COAL_PRICE[COAL_PRICE.length - 1];
+      if (!last) { el.textContent = sub.textContent = '無法讀取進口煤價資料。'; return; }
+      const now = new Date(), y = now.getFullYear(), m0 = now.getMonth() + 1, roc = y - 1911;
+      const b = DATA.coal.find(x => x.year === roc);
+      if (!b) { el.textContent = sub.textContent = `${roc} 年預算煤價尚未建檔，無法設算。`; return; }
+      const fx = Number(document.getElementById('fxInput').value) || 32.5;
+      const price = Object.fromEntries(COAL_PRICE.map(x => [x.d, x.p]));
+      const { growth, lastActual, months } = usageScenarios(TP_COAL, y, b.qty);
+      const doneA = [0, 0], restA = [0, 0];
+      let rows = '';
+      for (const { m, actual, qs } of months) {
+        const p = price[ym(y, m)] ?? last.p;
+        const imps = qs.map(q => (p - b.price) * q * fx / 1e8);
+        imps.forEach((v, i) => { if (m < m0) doneA[i] += v; else restA[i] += v; });
+        const qCell = (q) => actual ? (q / 1e4).toFixed(1) : est((q / 1e4).toFixed(1));
+        rows += `<tr><td>${m} 月</td><td class="num">${qCell(qs[0])}</td><td class="num">${qCell(qs[1])}</td>
+          <td class="num">${price[ym(y, m)] != null ? p.toFixed(2) : est(p.toFixed(2))}</td>
+          <td class="num">${f2(p - b.price)}</td>
+          <td class="num">${f2(imps[0])}</td><td class="num">${f2(imps[1])}</td></tr>`;
+      }
+      const both = (a) => `<span class="num">${f2(a[0])} ／ ${f2(a[1])} 億元</span>`;
+      const pctDiff = (last.p - b.price) / b.price * 100;
+      document.getElementById('kpiCoalLabel').textContent = `進口煤價・${roc} 年 ${m0}–12 月損益影響`;
+      document.getElementById('kpiCoalImpact').textContent = `${f2(restA[0])} ／ ${f2(restA[1])} 億元`;
+      sub.innerHTML = `左：${roc - 1} 推估成長／右：${roc} 預算用量｜${last.d} 燃料煤 CIF ${last.p.toFixed(2)} 美元/噸，較預算 <span class="${pctDiff >= 0 ? 'delta-up' : 'delta-down'}">${sign(pctDiff)}${pctDiff.toFixed(1)}%</span>；全年 ${f2(doneA[0] + restA[0])}／${f2(doneA[1] + restA[1])} 億元。<a href="#view=sim">詳見損益試算 →</a>`;
+      el.innerHTML = `
+        <p style="font-size:0.95rem;color:var(--text-light);margin:0 0 0.4rem;">左：${roc - 1} 年同月 × 今年累計成長　／　右：${roc} 年預算用量；匯率 ${fx}</p>
+        <div class="sim-total"><span style="font-weight:700;color:var(--navy);">${roc} 年 ${m0}–12 月（剩餘月份）損益影響</span><span class="val num" style="font-size:clamp(1.2rem,4.2vw,1.7rem);white-space:normal;">${f2(restA[0])} ／ ${f2(restA[1])} 億元</span></div>
+        ${m0 > 1 ? `<div class="sim-item"><span>1–${m0 - 1} 月已發生</span>${both(doneA)}</div>` : ''}
+        <div class="sim-item"><span>全年合計</span><strong>${both([doneA[0] + restA[0], doneA[1] + restA[1]])}</strong></div>
+        <div class="sim-item"><span>最新進口燃料煤 CIF（${last.d}）</span><span class="num">${last.p.toFixed(2)} 美元/噸</span></div>
+        <div class="sim-item"><span>${roc} 年預算國際煤價基準</span><span class="num">${b.price.toFixed(2)} 美元/噸</span></div>
+        <div class="table-wrap" style="margin-top:0.75rem;"><table style="font-size:1rem;">
+          <thead><tr><th>月份</th><th>用煤 (萬噸)<br>${roc - 1}推估成長</th><th>用煤 (萬噸)<br>${roc}預算</th><th>燃料煤 CIF<br>(美元/噸)</th><th>較預算</th><th>影響 (億元)<br>${roc - 1}推估成長</th><th>影響 (億元)<br>${roc}預算</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>
+        <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ 用煤量為能源署「發電燃料耗用」台電煙煤-燃料煤＋亞煙煤實績${lastActual ? `（至 ${lastActual} 月）` : ''}；煤價為能源署月報「9-02 進口能源價格」全國燃料煤 CIF 月加權均價，非台電實際採購價（114 年台電加權均價 101.47 美元，低於全國 CIF 114.77 美元）。預算基準 ${b.price.toFixed(2)} 美元未含海運費，CIF 含運費，故本試算<strong>可能高估</strong>影響。* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算用煤 ${(b.qty / 1e4).toFixed(1)} 萬噸依 ${roc - 1} 年逐月分布攤算；煤價未公布月份沿用最新。正值代表燃料成本增加（損益減少）。</p>`;
     }
 
     // 近三年逐月比較；rows = [{d:'YYYY-MM', q}]，div 換算顯示單位
