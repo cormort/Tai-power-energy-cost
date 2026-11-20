@@ -564,6 +564,27 @@
       </div>
     </section>
 
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">台電逐月燃料油用量</h2>
+            <p class="card-desc">能源署「發電燃料耗用」耗用量（萬公秉），近三年逐月比較</p>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="ovFuelOilUsageChart" role="img" aria-label="台電逐月燃料油用量，近三年逐月比較"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">台電逐月柴油用量</h2>
+            <p class="card-desc">能源署「發電燃料耗用」耗用量（千公秉），近三年逐月比較</p>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="ovDieselUsageChart" role="img" aria-label="台電逐月柴油用量，近三年逐月比較"></canvas></div>
+      </div>
+    </section>
+
     <!-- Charts Row 1 -->
     <section class="grid-2">
       <div class="card">
@@ -1528,7 +1549,7 @@
 
     // ── 主分頁與圖表對應表（分頁 → 該分頁要畫的 canvas；隱藏分頁不預先建立圖表）──
     const PANELS = {
-      overview: ['priceChart', 'qtyChart', 'costStackChart', 'opCostChart'],
+      overview: ['ovFuelOilUsageChart', 'ovDieselUsageChart', 'priceChart', 'qtyChart', 'costStackChart', 'opCostChart'],
       tariff: ['tariffChart'],
       sim: [],
       power: ['ppChart', 'gasMonthlyChart', 'cpcHistoryChart', 'gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'coalBenchChart', 'genMixChart'],
@@ -1549,6 +1570,8 @@
       coalUsageChart: () => renderUsageChart('coalUsageChart', TP_COAL, 1e4, '萬公噸'),
       fuelOilUsageChart: () => renderUsageChart('fuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
       dieselUsageChart: () => renderUsageChart('dieselUsageChart', TP_DIESEL, 1e3, '千公秉'),
+      ovFuelOilUsageChart: () => renderUsageChart('ovFuelOilUsageChart', TP_FUEL_OIL, 1e4, '萬公秉'),
+      ovDieselUsageChart: () => renderUsageChart('ovDieselUsageChart', TP_DIESEL, 1e3, '千公秉'),
       coalBenchChart: renderCoalBenchChart,
       genMixChart: renderGenMixChart
     };
@@ -2038,7 +2061,7 @@
         window.fuelDataReady = true;
         renderCoalImpact();
         renderOilImpact();
-        ['gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart'].forEach(renderChartIfVisible);
+        ['gasUsageChart', 'coalUsageChart', 'fuelOilUsageChart', 'dieselUsageChart', 'ovFuelOilUsageChart', 'ovDieselUsageChart'].forEach(renderChartIfVisible);
         const last = rows[rows.length - 1];
         const el = document.getElementById('cpcLiveNote');
         if (last && el) el.textContent = `最新：${last.eff} 實施 ${last.p} 元/m³`;
