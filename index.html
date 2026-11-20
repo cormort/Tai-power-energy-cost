@@ -309,6 +309,22 @@
     .table-wrap {
       overflow-x: auto;
     }
+    /* 可摺疊明細（損益試算的逐月表格預設收起，避免每個分頁都幾千 px 高） */
+    details.fold { border-top: 1px dashed var(--border); padding-top: 0.6rem; }
+    details.fold > summary {
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--navy);
+      list-style: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    details.fold > summary::before { content: '▸'; transition: transform 0.15s; display: inline-block; }
+    details.fold[open] > summary::before { transform: rotate(90deg); }
+    details.fold > summary:hover { color: var(--gas); }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -460,7 +476,7 @@
     @media print {
       body { background: #fff; }
       .controls-bar, .toggle-group, .btn-export, .tab-btn,
-      .scroll-hint, #chartFallbackNotice, #viewTabs { display: none !important; }
+      .scroll-hint, #chartFallbackNotice, #dataFallbackNotice, #viewTabs { display: none !important; }
       /* 列印時把隱藏的分頁全部打開，避免只印到當前分頁 */
       .panel[hidden] { display: block !important; }
       header { padding: 1rem 1rem 0.9rem; }
@@ -499,6 +515,10 @@
       <strong>圖表元件未載入</strong>：<code>chart.umd.min.js</code> 沒有載入成功（可能被網路政策或廣告封鎖器擋掉）。
       下方的明細數據表與損益試算器仍可正常使用；如需圖表，請確認該檔案與本頁位於同一目錄。
     </div>
+    <div class="chart-fallback" id="dataFallbackNotice" hidden>
+      <strong>部分即時資料未載入</strong>：<code>data/*.json</code>（中油氣價、能源署煤／油價、台電會計月報）讀取失敗，
+      相關的月度圖表與「剩餘月份損益影響」卡片會沿用內嵌資料或留白。年度決算／預算數字不受影響。
+    </div>
     <div class="controls-bar">
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
         <span style="font-size:0.86rem;font-weight:600;color:var(--navy);">走勢圖顯示範圍：</span>
@@ -520,7 +540,8 @@
     </nav>
 
     <div class="panel" data-panel="overview">
-    <!-- 財務概況：複製財務分頁的 KPI 卡（ovFinKpis ← finBody、ovCarbonKpis ← 碳費卡），數字與財務分頁一致 -->
+    <!-- 財務概況：只複製「台電會計月報」4 張卡（ovFinKpis ← finBody），
+         年度財務 KPI 留在「財務與碳費」分頁，不在總覽重複出現 -->
     <section class="card">
       <div class="card-header">
         <div>
@@ -530,8 +551,8 @@
       </div>
       <h3 style="font-size:1rem;margin:0 0 0.6rem;color:var(--navy);" id="ovFinTitle">台電會計月報</h3>
       <div id="ovFinKpis">讀取會計月報中…</div>
-      <h3 style="font-size:1rem;margin:0.4rem 0 0.6rem;color:var(--navy);">財務結構壓力與碳費衝擊概況（113–116 年度）</h3>
-      <div id="ovCarbonKpis"></div>
+      <!-- 年度財務 KPI（本期淨利／累積虧損／固定成本／碳費）只在「財務與碳費」分頁呈現，
+           不再複製到總覽，避免同一組數字在同一頁出現兩次 -->
     </section>
 
     <!-- KPI Cards（數字由 renderKpis() 依 DATA 重算；此處為無 JS 時的備援值） -->
@@ -562,12 +583,12 @@
         <div class="kpi-sub" id="kpiCpcImpactSub">讀取中油牌價中…</div>
       </div>
       <div class="kpi-card coal" style="border-top-color:var(--danger);">
-        <div class="kpi-label"><span id="kpiCoalLabel">進口煤價・剩餘月份損益影響</span><span class="pill pill-budget">每日更新</span></div>
+        <div class="kpi-label"><span id="kpiCoalLabel">進口煤價・剩餘月份損益影響</span><span class="pill pill-budget">月更新</span></div>
         <div class="kpi-value num" id="kpiCoalImpact">--</div>
         <div class="kpi-sub" id="kpiCoalImpactSub">讀取進口煤價中…</div>
       </div>
       <div class="kpi-card oil" style="border-top-color:var(--danger);">
-        <div class="kpi-label"><span id="kpiOilLabel">燃料油＋柴油・剩餘月份損益影響</span><span class="pill pill-budget">每日更新</span></div>
+        <div class="kpi-label"><span id="kpiOilLabel">燃料油＋柴油・剩餘月份損益影響</span><span class="pill pill-budget">月更新</span></div>
         <div class="kpi-value num" id="kpiOilImpact">--</div>
         <div class="kpi-sub" id="kpiOilImpactSub">讀取油價中…</div>
       </div>
@@ -1040,8 +1061,8 @@
         </div>
         <div class="kpi-card" style="border-top-color:var(--danger);">
           <div class="kpi-label"><span>114 審定決算・累積虧損</span><span class="pill pill-audit">待彌補</span></div>
-          <div class="kpi-value num" id="kpiAccLoss">4,257.57 億元</div>
-          <div class="kpi-sub" id="kpiAccLossSub">長期負債 10,387.84 億元；營運資金餘額 -7,220.34 億元</div>
+          <div class="kpi-value num" id="kpiAccLoss">3,507.27 億元</div>
+          <div class="kpi-sub" id="kpiAccLossSub">113 年底 4,210.75 ＋其他綜合損益 46.83 ＝ 4,257.57 億，以 114 年淨利 750.31 億填補後之餘額；長期負債 10,387.84 億元</div>
         </div>
         <div class="kpi-card" style="border-top-color:#475569;">
           <div class="kpi-label"><span>固定成本剛性（折舊＋利息）</span><span class="pill pill-audit">114 決算</span></div>
@@ -1109,7 +1130,11 @@
     // ── 財務結構與溫室氣體（決算書揭露值；折舊、利息取自 operating_costs）──
     const FIN = {
       net_profit: { '113': -392.27, '114': 750.31 },
-      accumulated_loss: 4257.57,
+      // 114 年底待彌補虧損＝丙四「保留盈餘(累積虧損–)」-3,507.27 億（＝丙二「待填補之虧損」350,726,715,045）
+      accumulated_loss: 3507.27,
+      acc_loss_113: 4210.75,        // 丙四上年度欄：113 年底累積虧損
+      acc_loss_oci: 46.83,          // 丙二「其他綜合損益轉入數」
+      acc_loss_prior: 4257.57,      // 丙二「虧損之部」合計（＝上兩項，填補前）
       long_term_debt: 10387.84,
       working_capital: -7220.34,
       ghg: { '113': 9078, '114': 8793 },               // 萬噸 CO₂e（火力排放；113 見 115 書、114 見 116 書）
@@ -1847,7 +1872,7 @@
       setKpi('kpiNetProfit', `${np[Y] >= 0 ? '+' : ''}${fmtDec(np[Y])} 億元`);
       setKpi('kpiNetProfitSub', `較 113 年淨損 ${fmtDec(np[P])} 億元改善 ${fmtDec(np[Y] - np[P])} 億元`);
       setKpi('kpiAccLoss', `${fmtDec(FIN.accumulated_loss)} 億元`);
-      setKpi('kpiAccLossSub', `長期負債 ${fmtDec(FIN.long_term_debt)} 億元；營運資金餘額 ${fmtDec(FIN.working_capital)} 億元`);
+      setKpi('kpiAccLossSub', `113 年底 ${fmtDec(FIN.acc_loss_113)} ＋其他綜合損益 ${fmtDec(FIN.acc_loss_oci)} ＝ ${fmtDec(FIN.acc_loss_prior)} 億，以 114 年淨利 ${fmtDec(FIN.net_profit['114'])} 億填補後之餘額；長期負債 ${fmtDec(FIN.long_term_debt)} 億元`);
 
       const dep = oc[String(Y)]['折舊'], intr = oc[String(Y)]['利息'];
       setKpi('kpiFixed', `${fmtDec(dep + intr)} 億元`);
@@ -2078,10 +2103,24 @@
 
     // data/cpc_gas.json 由 GitHub Actions 每月 1 日抓中油牌價寫入；抓不到時沿用內嵌資料
     let CPC_LIVE = [], TP_GAS = [], TP_COAL = [], TP_FUEL_OIL = [], TP_DIESEL = [], COAL_PRICE = [], FUEL_OIL_PRICE = [], DIESEL_PRICE = [];
-    const getJson = (u) => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []);
+    const getJson = (u) => fetch(u, { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .catch((e) => { console.warn('[data]', u, e.message); return null; });
+
+    // data/*.json 讀取失敗時的提示（原本是靜默少掉圖表與卡片，讀者不會知道）
+    const dataNotice = (msg) => {
+      const n = document.getElementById('dataFallbackNotice');
+      if (!n || !n.hidden) return;
+      n.hidden = false;
+      if (msg) n.insertAdjacentHTML('beforeend', `<br /><span style="font-size:0.85rem;">${msg}</span>`);
+    };
+
     Promise.all(['cpc_gas', 'taipower_gas_monthly', 'taipower_coal_monthly', 'taipower_fuel_oil_monthly', 'taipower_diesel_monthly',
       'import_coal_price', 'fuel_oil_price', 'diesel_price'].map(f => getJson(`data/${f}.json`)))
-      .then(([rows, usage, coal, oil, diesel, coalPrice, foPrice, diPrice]) => {
+      .then((res) => {
+        const failed = res.filter(v => v == null).length;
+        if (failed) dataNotice(`${failed} / ${res.length} 個 data/*.json 讀取失敗（詳見 console）。`);
+        const [rows, usage, coal, oil, diesel, coalPrice, foPrice, diPrice] = res.map(v => v || []);
         CPC_LIVE = rows;
         TP_GAS = usage;
         TP_COAL = coal;
@@ -2100,7 +2139,7 @@
         renderChartIfVisible('cpcHistoryChart');
         renderCpcImpact();
       })
-      .catch(() => { document.getElementById('cpcImpact').textContent = '無法讀取中油牌價資料。'; });
+      .catch(() => { document.getElementById('cpcImpact').textContent = '無法讀取中油牌價資料。'; dataNotice('中油牌價資料讀取失敗。'); });
 
     const ym = (yy, m) => `${yy}-${String(m).padStart(2, '0')}`;
     const sign = (v) => (v >= 0 ? '+' : '');
@@ -2170,17 +2209,20 @@
         <div class="sim-item"><span>全年合計</span><strong>${both([doneA[0] + restA[0], doneA[1] + restA[1]])}</strong></div>
         <div class="sim-item"><span>中油最新牌價（${last.eff} 實施，含稅 → 未稅）</span><span class="num">${last.p.toFixed(4)} → ${(last.p / 1.05).toFixed(4)} 元/m³</span></div>
         <div class="sim-item"><span>${roc} 年預算統約單價（未稅）</span><span class="num">${b.p.toFixed(4)} 元/m³</span></div>
-        <div class="table-wrap" style="margin-top:0.75rem;"><table style="font-size:1rem;">
+        <details class="fold" style="margin-top:0.75rem;">
+        <summary>逐月明細（12 個月）與計算說明</summary>
+        <div class="table-wrap" style="margin-top:0.5rem;"><table style="font-size:1rem;">
           <thead><tr><th>月份</th><th>用氣 (億m³)<br>${roc - 1}推估成長</th><th>用氣 (億m³)<br>${roc}預算</th><th>牌價未稅<br>(元/m³)</th><th>較預算</th><th>影響 (億元)<br>${roc - 1}推估成長</th><th>影響 (億元)<br>${roc}預算</th></tr></thead>
           <tbody>${rows}</tbody></table></div>
-        <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ 用氣量為能源署「發電燃料耗用」台電進口液化天然氣實績${lastActual ? `（至 ${lastActual} 月）` : ''}；* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算用氣 ${(budgetTot / 1e8).toFixed(2)} 億m³ 依 ${roc - 1} 年逐月分布攤算；牌價未公布月份沿用最新。影響僅計統約部分（占 ${(share * 100).toFixed(1)}%，依預算比例），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。資料每日自動更新。</p>`;
+        <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ 用氣量為能源署「發電燃料耗用」台電進口液化天然氣實績${lastActual ? `（至 ${lastActual} 月）` : ''}；* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算用氣 ${(budgetTot / 1e8).toFixed(2)} 億m³ 依 ${roc - 1} 年逐月分布攤算；牌價未公布月份沿用最新。影響僅計統約部分（占 ${(share * 100).toFixed(1)}%，依預算比例），大潭合約另計價不含。正值代表購氣成本增加（損益減少）。資料每日自動更新。</p>
+        </details>`;
     }
 
     // 台電會計月報（data/taipower_accounts.json，取自政府資料開放平臺 dataset 18917，每日檢查更新）
     var TP_ACC = null; // var：分頁初始渲染可能早於此行執行
     fetch('data/taipower_accounts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then((acc) => {
       const el = document.getElementById('finBody');
-      if (!acc) { el.textContent = document.getElementById('ovFinKpis').textContent = '無法讀取會計月報資料。'; return; }
+      if (!acc) { el.textContent = document.getElementById('ovFinKpis').textContent = '無法讀取會計月報資料。'; dataNotice('台電會計月報讀取失敗。'); return; }
       TP_ACC = acc;
       const roc = acc.latest.slice(0, 3), mm = +acc.latest.slice(3);
       const row = (code) => acc.is.find(r => r.code === code);
@@ -2226,7 +2268,7 @@
           <div class="kpi-card" style="border-top-color:#475569;">
             <div class="kpi-label"><span>${roc} 年 ${mm} 月底負債比率</span></div>
             <div class="kpi-value num">${debtRatio.toFixed(1)}%</div>
-            <div class="kpi-sub">負債 ${fmt(bs('2'))} ／ 資產 ${fmt(bs('1'))} 億元；累積虧損 ${fmt(bs('33'))} 億元</div>
+            <div class="kpi-sub">負債 ${fmt(bs('2'))} ／ 資產 ${fmt(bs('1'))} 億元；保留盈餘（累積虧損）合計 ${fmt(bs('33'))} 億元＝累積虧損 ${fmt(bs('3303'))}＋未指撥 ${fmt(bs('3302'))}</div>
           </div>
         </div>
         <div class="chart-box" style="margin-bottom:1rem;"><canvas id="finMonthlyChart" role="img" aria-label="台電逐月稅前淨利實際數與預算數比較"></canvas></div>
@@ -2304,10 +2346,13 @@
         <div class="sim-item"><span>全年合計</span><strong>${both([doneA[0] + restA[0], doneA[1] + restA[1]])}</strong></div>
         <div class="sim-item"><span>${c.rawLabel(last)}</span><span class="num">${pf(lastP)} ${c.pUnit}</span></div>
         <div class="sim-item"><span>${roc} 年${c.basis}</span><span class="num">${pf(b.price)} ${c.pUnit}</span></div>
-        <div class="table-wrap" style="margin-top:0.75rem;"><table style="font-size:1rem;">
+        <details class="fold" style="margin-top:0.75rem;">
+        <summary>逐月明細（12 個月）與計算說明</summary>
+        <div class="table-wrap" style="margin-top:0.5rem;"><table style="font-size:1rem;">
           <thead><tr><th>月份</th><th>${c.qLabel} (${c.qUnit})<br>${roc - 1}推估成長</th><th>${c.qLabel} (${c.qUnit})<br>${roc}預算</th><th>價格<br>(${c.pUnit})</th><th>較預算</th><th>影響 (億元)<br>${roc - 1}推估成長</th><th>影響 (億元)<br>${roc}預算</th></tr></thead>
           <tbody>${rows}</tbody></table></div>
-        <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ ${c.note(b)}${lastActual ? `用量實績至 ${lastActual} 月；` : ''}* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算量 ${(b.qty / c.qDiv).toFixed(1)} ${c.qUnit}依 ${roc - 1} 年逐月分布攤算；價格未公布月份沿用最新。正值代表燃料成本增加（損益減少）。</p>`;
+        <p style="font-size:0.92rem;line-height:1.6;color:var(--text-light);margin:0.75rem 0 0;">※ ${c.note(b)}${lastActual ? `用量實績至 ${lastActual} 月；` : ''}* 為推估：「${roc - 1}推估成長」= 去年同月 × 今年累計成長 ${((growth - 1) * 100).toFixed(1)}%，「${roc}預算」= ${roc} 年預算量 ${(b.qty / c.qDiv).toFixed(1)} ${c.qUnit}依 ${roc - 1} 年逐月分布攤算；價格未公布月份沿用最新。正值代表燃料成本增加（損益減少）。</p>
+        </details>`;
       return { roc, m0, doneA, restA, last, lastP, b };
     }
 
@@ -2488,8 +2533,26 @@
       });
     }
     // ── 啟動順序：先算不依賴 Chart.js 的部分，再畫圖 ──
+    // 列印時把摺疊明細全部展開，印完還原使用者的展開狀態
+    let foldState = null;
+    const openAllFolds = () => {
+      if (foldState) return;
+      const ds = [...document.querySelectorAll('details.fold')];
+      foldState = ds.map((d) => d.open);
+      ds.forEach((d) => { d.open = true; });
+    };
+    const restoreFolds = () => {
+      if (!foldState) return;
+      document.querySelectorAll('details.fold').forEach((d, i) => { d.open = !!foldState[i]; });
+      foldState = null;
+    };
+    window.addEventListener('beforeprint', openAllFolds);
+    window.addEventListener('afterprint', restoreFolds);
+    if (window.matchMedia) {
+      const mq = window.matchMedia('print');
+      if (mq.addEventListener) mq.addEventListener('change', (e) => (e.matches ? openAllFolds() : restoreFolds()));
+    }
     renderKpis();
-    mirrorKpis(document.getElementById('kpiNetProfit').closest('.kpi-grid'), 'ovCarbonKpis');
     renderTariffTable();
     renderPowerFlowNote();
     renderUnitCostNote();
