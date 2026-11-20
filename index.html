@@ -557,11 +557,20 @@
         <div class="kpi-value num" id="kpiOilImpact">--</div>
         <div class="kpi-sub" id="kpiOilImpactSub">讀取油價中…</div>
       </div>
-      <div class="kpi-card" style="border-top-color:#475569;">
-        <div class="kpi-label"><span id="kpiFinLabel">台電會計月報・累計稅前損益</span><span class="pill pill-actual">每月更新</span></div>
-        <div class="kpi-value num" id="kpiFinPretax">--</div>
-        <div class="kpi-sub" id="kpiFinSub">讀取會計月報中…</div>
+    </section>
+
+    <!-- 財務概況：複製財務分頁的 KPI 卡（ovFinKpis ← finBody、ovCarbonKpis ← 碳費卡），數字與財務分頁一致 -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">財務概況</h2>
+          <p class="card-desc">台電會計月報與財務結構壓力摘要。<a href="#view=finance">詳見財務分頁 →</a></p>
+        </div>
       </div>
+      <h3 style="font-size:1rem;margin:0 0 0.6rem;color:var(--navy);" id="ovFinTitle">台電會計月報</h3>
+      <div id="ovFinKpis">讀取會計月報中…</div>
+      <h3 style="font-size:1rem;margin:0.4rem 0 0.6rem;color:var(--navy);">財務結構壓力與碳費衝擊概況（113–116 年度）</h3>
+      <div id="ovCarbonKpis"></div>
     </section>
 
     <section class="grid-2">
@@ -2171,7 +2180,7 @@
     var TP_ACC = null; // var：分頁初始渲染可能早於此行執行
     fetch('data/taipower_accounts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then((acc) => {
       const el = document.getElementById('finBody');
-      if (!acc) { el.textContent = document.getElementById('kpiFinSub').textContent = '無法讀取會計月報資料。'; return; }
+      if (!acc) { el.textContent = document.getElementById('ovFinKpis').textContent = '無法讀取會計月報資料。'; return; }
       TP_ACC = acc;
       const roc = acc.latest.slice(0, 3), mm = +acc.latest.slice(3);
       const row = (code) => acc.is.find(r => r.code === code);
@@ -2196,10 +2205,7 @@
         <tr style="font-weight:700;"><td>負債比率</td><td class="num">${debtRatio.toFixed(1)}%</td></tr></tbody></table></div>`;
       const last = acc.monthly[acc.monthly.length - 1];
       document.getElementById('finTitle').textContent = `台電會計月報（${roc} 年 1–${mm} 月）`;
-      document.getElementById('kpiFinLabel').textContent = `台電會計月報・${roc} 年 1–${mm} 月累計稅前損益`;
-      document.getElementById('kpiFinPretax').innerHTML = `<span class="${pretax.yA < 0 ? 'delta-up' : 'delta-down'}">${fmt(pretax.yA)} 億元</span>`;
-      document.getElementById('kpiFinSub').innerHTML =
-        `預算 ${fmt(pretax.yB)} 億元，差異 <span class="${diffCls(pretax.yA - pretax.yB)}">${f2(pretax.yA - pretax.yB)}</span>｜${mm} 月單月 ${fmt(last.pretaxA)}（預算 ${fmt(last.pretaxB)}）；火力發電費用超支 <span class="delta-up">${f2(thermal.yA - thermal.yB)}</span> 億。<a href="#view=finance">詳見財務分頁 →</a>`;
+      document.getElementById('ovFinTitle').textContent = `台電會計月報（${roc} 年 1–${mm} 月）`;
       el.innerHTML = `
         <div class="kpi-grid" style="margin-bottom:1rem;">
           <div class="kpi-card" style="border-top-color:var(--danger);">
@@ -2229,8 +2235,17 @@
           <div><h3 style="font-size:1rem;margin:0 0 0.5rem;color:var(--navy);">資產負債表（億元）</h3>${bsTbl}</div>
         </div>
         <p style="font-size:0.85rem;color:var(--text-light);margin:0.75rem 0 0;">※ 台電每月會計月報（自結數，非審定決算）；差異欄紅色代表對損益不利（收入低於預算或成本高於預算）。</p>`;
+      mirrorKpis(el.querySelector('.kpi-grid'), 'ovFinKpis');
       renderChartIfVisible('finMonthlyChart');
     });
+
+    // 把財務分頁的 KPI 卡複製到總覽（去掉 id 避免重複），確保兩處數字一致
+    function mirrorKpis(src, destId) {
+      const c = src.cloneNode(true);
+      c.removeAttribute('id');
+      c.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+      document.getElementById(destId).replaceChildren(c);
+    }
 
     function renderFinMonthlyChart() {
       resetCanvas('finMonthlyChart');
@@ -2474,6 +2489,7 @@
     }
     // ── 啟動順序：先算不依賴 Chart.js 的部分，再畫圖 ──
     renderKpis();
+    mirrorKpis(document.getElementById('kpiNetProfit').closest('.kpi-grid'), 'ovCarbonKpis');
     renderTariffTable();
     renderPowerFlowNote();
     renderUnitCostNote();
